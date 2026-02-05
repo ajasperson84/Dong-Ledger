@@ -275,23 +275,26 @@ struct WeekNavigationHeader: View {
             }
 
             // Field display (read-only)
-            if let field = currentField {
-                HStack(spacing: 6) {
-                    Image(systemName: fieldIcon)
-                        .font(.system(size: 12))
+            HStack(spacing: 6) {
+                Image(systemName: fieldIcon)
+                    .font(.system(size: 12))
+                if let field = currentField {
                     Text(field.rawValue.uppercased())
                         .font(.system(size: 11, weight: .bold, design: .monospaced))
+                } else {
+                    Text("NO FIELD SET")
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
                 }
-                .foregroundColor(TronColors.green)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(TronColors.surfaceBackground)
-                .cornerRadius(6)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(TronColors.green.opacity(0.5), lineWidth: 1)
-                )
             }
+            .foregroundColor(currentField != nil ? TronColors.green : TronColors.dimText)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(TronColors.surfaceBackground)
+            .cornerRadius(6)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(currentField != nil ? TronColors.green.opacity(0.5) : TronColors.gridLine.opacity(0.3), lineWidth: 1)
+            )
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
