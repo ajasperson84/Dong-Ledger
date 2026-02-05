@@ -145,29 +145,15 @@ struct PlayerManagementRow: View {
                     .stroke(TronColors.cyan.opacity(0.5), lineWidth: 1)
                     .frame(width: 44, height: 44)
 
-                if let number = player.jerseyNumber {
-                    Text("#\(number)")
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
-                        .foregroundColor(TronColors.cyan)
-                } else {
-                    Text(String(player.name.prefix(1)).uppercased())
-                        .font(.system(size: 18, weight: .bold, design: .monospaced))
-                        .foregroundColor(TronColors.cyan)
-                }
+                Text(String(player.name.prefix(1)).uppercased())
+                    .font(.system(size: 18, weight: .bold, design: .monospaced))
+                    .foregroundColor(TronColors.cyan)
             }
 
             // Player info
-            VStack(alignment: .leading, spacing: 4) {
-                Text(player.name.uppercased())
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                    .foregroundColor(TronColors.primaryText)
-
-                if let team = player.teamName, !team.isEmpty {
-                    Text(team.uppercased())
-                        .font(.system(size: 10, design: .monospaced))
-                        .foregroundColor(TronColors.dimText)
-                }
-            }
+            Text(player.name.uppercased())
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundColor(TronColors.primaryText)
 
             Spacer()
 

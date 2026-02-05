@@ -1,6 +1,6 @@
 //
 //  AddEditPlayerView.swift
-//  StickballStats
+//  Dong Country Ledger 5000
 //
 //  Add or edit player details
 //
@@ -14,8 +14,6 @@ struct AddEditPlayerView: View {
     let player: Player?
 
     @State private var name: String = ""
-    @State private var jerseyNumber: String = ""
-    @State private var teamName: String = ""
     @State private var isSaving = false
     @State private var showingError = false
     @State private var errorMessage = ""
@@ -49,21 +47,6 @@ struct AddEditPlayerView: View {
                                 placeholder: "Enter name...",
                                 text: $name,
                                 color: TronColors.cyan
-                            )
-
-                            TronTextField(
-                                title: "JERSEY NUMBER",
-                                placeholder: "Optional",
-                                text: $jerseyNumber,
-                                color: TronColors.yellow,
-                                keyboardType: .numberPad
-                            )
-
-                            TronTextField(
-                                title: "TEAM NAME",
-                                placeholder: "Optional",
-                                text: $teamName,
-                                color: TronColors.green
                             )
                         }
                         .padding(.horizontal, 16)
@@ -108,8 +91,6 @@ struct AddEditPlayerView: View {
             .onAppear {
                 if let player = player {
                     name = player.name
-                    jerseyNumber = player.jerseyNumber.map { String($0) } ?? ""
-                    teamName = player.teamName ?? ""
                 }
             }
             .alert("ERROR", isPresented: $showingError) {
@@ -128,22 +109,14 @@ struct AddEditPlayerView: View {
         Task {
             do {
                 let trimmedName = name.trimmingCharacters(in: .whitespaces)
-                let number = Int(jerseyNumber)
-                let team = teamName.trimmingCharacters(in: .whitespaces)
 
                 if var existingPlayer = player {
                     // Update existing player
                     existingPlayer.name = trimmedName
-                    existingPlayer.jerseyNumber = number
-                    existingPlayer.teamName = team.isEmpty ? nil : team
                     try await statsService.updatePlayer(existingPlayer)
                 } else {
                     // Add new player
-                    try await statsService.addPlayer(
-                        name: trimmedName,
-                        jerseyNumber: number,
-                        teamName: team.isEmpty ? nil : team
-                    )
+                    try await statsService.addPlayer(name: trimmedName)
                 }
 
                 await MainActor.run {
