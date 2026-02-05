@@ -1,8 +1,8 @@
 //
 //  BatchStatsEntryView.swift
-//  StickballStats
+//  Dong Country Ledger 5000
 //
-//  Quick batch entry for all players' weekly stats
+//  Quick batch entry for players' weekly stats
 //
 
 import SwiftUI
@@ -15,6 +15,13 @@ struct BatchStatsEntryView: View {
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var expandedPlayerId: String?
+
+    // Only show players who were selected for this week
+    var playersThisWeek: [Player] {
+        let weekStats = statsService.getWeeklyStatsForWeek(statsService.currentWeek)
+        let playerIds = Set(weekStats.map { $0.playerId })
+        return statsService.players.filter { playerIds.contains($0.id ?? "") }
+    }
 
     var body: some View {
         NavigationStack {
@@ -29,7 +36,7 @@ struct BatchStatsEntryView: View {
                                 .font(.system(size: 12, weight: .medium, design: .monospaced))
                                 .foregroundColor(TronColors.secondaryText)
 
-                            Text("WEEK \(statsService.currentWeek), \(statsService.currentYear)")
+                            Text("WEEK \(statsService.currentWeek)")
                                 .font(.system(size: 20, weight: .bold, design: .monospaced))
                                 .foregroundColor(TronColors.cyan)
                                 .neonGlow(color: TronColors.cyan, radius: 5)
@@ -69,12 +76,26 @@ struct BatchStatsEntryView: View {
                             .tint(TronColors.cyan)
                             .scaleEffect(1.5)
                         Spacer()
+                    } else if playersThisWeek.isEmpty {
+                        Spacer()
+                        VStack(spacing: 12) {
+                            Image(systemName: "person.3")
+                                .font(.system(size: 40))
+                                .foregroundColor(TronColors.dimText)
+                            Text("NO PLAYERS SELECTED")
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundColor(TronColors.secondaryText)
+                            Text("Add players for this week first")
+                                .font(.system(size: 11, design: .monospaced))
+                                .foregroundColor(TronColors.dimText)
+                        }
+                        Spacer()
                     } else {
                         // Players list with inline editing
                         ScrollView {
                             LazyVStack(spacing: 8) {
-                                ForEach(statsService.players) { player in
-                                    if let playerId = player.id {
+                                ForEach(playersThisWeek) { player in
+                                    if let playerId = player.id, playerStats[playerId] != nil {
                                         BatchPlayerRow(
                                             player: player,
                                             stats: binding(for: playerId, player: player),
@@ -131,18 +152,10 @@ struct BatchStatsEntryView: View {
     private func loadAllStats() async {
         isLoading = true
 
-        for player in statsService.players {
-            guard let playerId = player.id else { continue }
-            do {
-                let stats = try await statsService.getOrCreateWeeklyStats(
-                    for: player,
-                    week: statsService.currentWeek,
-                    year: statsService.currentYear
-                )
-                playerStats[playerId] = stats
-            } catch {
-                print("Error loading stats for \(player.name): \(error)")
-            }
+        // Only load stats for players who have been selected for this week
+        let weekStats = statsService.getWeeklyStatsForWeek(statsService.currentWeek)
+        for stats in weekStats {
+            playerStats[stats.playerId] = stats
         }
 
         isLoading = false
@@ -180,15 +193,17 @@ struct BatchPlayerRow: View {
             // Header row (always visible)
             Button(action: onTap) {
                 HStack {
-                    Text(player.name.uppercased())
+                    // Use short name
+                    Text(player.name.shortName)
                         .font(.system(size: 14, weight: .bold, design: .monospaced))
-                        .foregroundColor(TronColors.primaryText)
+                        .foregroundColor(TronColors.cyan)
+                        .frame(width: 50, alignment: .leading)
 
                     Spacer()
 
                     // Quick stats summary
                     if !isExpanded {
-                        HStack(spacing: 8) {
+                        HStack(spacing: 6) {
                             QuickStatPill(value: stats.dongs, label: "D", color: TronColors.cyan)
                             QuickStatPill(value: stats.drops, label: "R", color: TronColors.orange)
                             QuickStatPill(value: stats.doublePlays, label: "DP", color: TronColors.magenta)
@@ -212,6 +227,11 @@ struct BatchPlayerRow: View {
                 VStack(spacing: 16) {
                     Divider()
                         .background(TronColors.gridLine)
+
+                    // Full name when expanded
+                    Text(player.name.uppercased())
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .foregroundColor(TronColors.secondaryText)
 
                     // Stats counters in a grid
                     LazyVGrid(columns: [
