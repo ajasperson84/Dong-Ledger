@@ -251,6 +251,11 @@ class StatsService: ObservableObject {
 
         if let infoId = info.id {
             try db.collection("gameWeekInfo").document(infoId).setData(from: info)
+            // Update local cache immediately so UI reflects the change
+            gameWeekInfos[weekNumber] = info
+            print("✅ Updated field for week \(weekNumber): \(field?.rawValue ?? "none")")
+        } else {
+            print("❌ No ID for gameWeekInfo, cannot save")
         }
     }
 

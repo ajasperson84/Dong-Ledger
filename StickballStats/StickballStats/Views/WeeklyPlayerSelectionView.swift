@@ -220,7 +220,11 @@ struct WeeklyPlayerSelectionView: View {
         Task {
             // Save field selection
             if let field = selectedField {
-                try? await statsService.updateGameWeekField(weekNumber: statsService.currentWeekNumber, field: field)
+                do {
+                    try await statsService.updateGameWeekField(weekNumber: statsService.currentWeekNumber, field: field)
+                } catch {
+                    print("❌ Error saving field selection: \(error)")
+                }
             }
 
             // Create stats entries for all selected players
