@@ -22,14 +22,30 @@ struct WeeklyPlayerSelectionView: View {
                 VStack(spacing: 0) {
                     // Header
                     VStack(spacing: 4) {
-                        Text("WEEK \(statsService.currentWeek)")
+                        // Special event name if any
+                        if let gameWeek = statsService.currentGameWeek, let event = gameWeek.specialEvent {
+                            Text(event.rawValue.uppercased())
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundColor(TronColors.magenta)
+                                .neonGlow(color: TronColors.magenta, radius: 5)
+                        }
+
+                        Text("WEEK \(statsService.currentWeekNumber)")
                             .font(.system(size: 32, weight: .bold, design: .monospaced))
                             .foregroundColor(TronColors.cyan)
                             .neonGlow(color: TronColors.cyan, radius: 10)
 
+                        // Show the date
+                        if let gameWeek = statsService.currentGameWeek {
+                            Text(gameWeek.formattedDate.uppercased())
+                                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                                .foregroundColor(TronColors.secondaryText)
+                        }
+
                         Text("SELECT PLAYERS WHO PLAYED")
-                            .font(.system(size: 12, weight: .medium, design: .monospaced))
-                            .foregroundColor(TronColors.secondaryText)
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundColor(TronColors.dimText)
+                            .padding(.top, 4)
                     }
                     .padding(.vertical, 16)
 

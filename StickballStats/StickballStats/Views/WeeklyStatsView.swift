@@ -208,35 +208,211 @@ struct CompactStatBadge: View {
 // MARK: - Week Navigation Header
 struct WeekNavigationHeader: View {
     @EnvironmentObject var statsService: StatsService
+    @State private var showingFieldPicker = false
+
+    var currentField: GameField? {
+        statsService.getFieldForWeek(statsService.currentWeekNumber)
+    }
 
     var body: some View {
-        HStack {
-            Button(action: { statsService.previousWeek() }) {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(TronColors.cyan)
-                    .frame(width: 44, height: 44)
+        VStack(spacing: 8) {
+            // Main navigation row
+            HStack {
+                Button(action: { statsService.previousWeek() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(statsService.canGoPrevious() ? TronColors.cyan : TronColors.dimText)
+                        .frame(width: 44, height: 44)
+                }
+                .disabled(!statsService.canGoPrevious())
+
+                Spacer()
+
+                VStack(spacing: 4) {
+                    // Special event name or Week number
+                    if let gameWeek = statsService.currentGameWeek {
+                        if let event = gameWeek.specialEvent {
+                            Text(event.rawValue.uppercased())
+                                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                .foregroundColor(TronColors.magenta)
+                                .neonGlow(color: TronColors.magenta, radius: 5)
+                        }
+
+                        Text("WEEK \(statsService.currentWeekNumber)")
+                            .font(.system(size: gameWeek.specialEvent != nil ? 16 : 24, weight: .bold, design: .monospaced))
+                            .foregroundColor(TronColors.cyan)
+                            .neonGlow(color: TronColors.cyan, radius: gameWeek.specialEvent != nil ? 4 : 8)
+
+                        // Date
+                        Text(gameWeek.formattedDate.uppercased())
+                            .font(.system(size: 11, weight: .medium, design: .monospaced))
+                            .foregroundColor(TronColors.secondaryText)
+                    } else {
+                        Text("WEEK \(statsService.currentWeekNumber)")
+                            .font(.system(size: 24, weight: .bold, design: .monospaced))
+                            .foregroundColor(TronColors.cyan)
+                            .neonGlow(color: TronColors.cyan, radius: 8)
+                    }
+                }
+
+                Spacer()
+
+                Button(action: { statsService.nextWeek() }) {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundColor(statsService.canGoNext() ? TronColors.cyan : TronColors.dimText)
+                        .frame(width: 44, height: 44)
+                }
+                .disabled(!statsService.canGoNext())
             }
 
-            Spacer()
+            // Field selector row
+            Button(action: { showingFieldPicker = true }) {
+                HStack(spacing: 6) {
+                    Image(systemName: "mappin.circle.fill")
+                        .font(.system(size: 12))
 
-            Text("WEEK \(statsService.currentWeek)")
-                .font(.system(size: 24, weight: .bold, design: .monospaced))
-                .foregroundColor(TronColors.cyan)
-                .neonGlow(color: TronColors.cyan, radius: 8)
+                    if let field = currentField {
+                        Text(field.rawValue.uppercased())
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    } else {
+                        Text("SELECT FIELD")
+                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    }
 
-            Spacer()
-
-            Button(action: { statsService.nextWeek() }) {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 20, weight: .bold))
-                    .foregroundColor(TronColors.cyan)
-                    .frame(width: 44, height: 44)
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9))
+                }
+                .foregroundColor(currentField != nil ? TronColors.green : TronColors.secondaryText)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(TronColors.surfaceBackground)
+                .cornerRadius(6)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(currentField != nil ? TronColors.green.opacity(0.5) : TronColors.gridLine.opacity(0.3), lineWidth: 1)
+                )
+            }
+            .sheet(isPresented: $showingFieldPicker) {
+                FieldPickerView(weekNumber: statsService.currentWeekNumber)
+                    .environmentObject(statsService)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(TronColors.cardBackground.opacity(0.8))
+    }
+}
+
+// MARK: - Field Picker View
+struct FieldPickerView: View {
+    @EnvironmentObject var statsService: StatsService
+    @Environment(\.dismiss) var dismiss
+    let weekNumber: Int
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                TronGridBackground()
+
+                VStack(spacing: 20) {
+                    Text("SELECT FIELD")
+                        .font(.system(size: 18, weight: .bold, design: .monospaced))
+                        .foregroundColor(TronColors.cyan)
+                        .neonGlow(color: TronColors.cyan, radius: 5)
+                        .padding(.top, 20)
+
+                    VStack(spacing: 12) {
+                        ForEach(GameField.allCases, id: \.self) { field in
+                            FieldOptionButton(
+                                field: field,
+                                isSelected: statsService.getFieldForWeek(weekNumber) == field,
+                                onSelect: {
+                                    Task {
+                                        try? await statsService.updateGameWeekField(weekNumber: weekNumber, field: field)
+                                        dismiss()
+                                    }
+                                }
+                            )
+                        }
+
+                        // Clear selection option
+                        Button(action: {
+                            Task {
+                                try? await statsService.updateGameWeekField(weekNumber: weekNumber, field: nil)
+                                dismiss()
+                            }
+                        }) {
+                            Text("CLEAR SELECTION")
+                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                .foregroundColor(TronColors.orange)
+                                .padding(.vertical, 12)
+                        }
+                    }
+                    .padding(.horizontal, 24)
+
+                    Spacer()
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .foregroundColor(TronColors.orange)
+                }
+            }
+        }
+        .presentationDetents([.medium])
+    }
+}
+
+// MARK: - Field Option Button
+struct FieldOptionButton: View {
+    let field: GameField
+    let isSelected: Bool
+    let onSelect: () -> Void
+
+    var body: some View {
+        Button(action: onSelect) {
+            HStack {
+                Image(systemName: fieldIcon)
+                    .font(.system(size: 20))
+                    .foregroundColor(isSelected ? TronColors.green : TronColors.secondaryText)
+                    .frame(width: 32)
+
+                Text(field.rawValue.uppercased())
+                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                    .foregroundColor(isSelected ? TronColors.green : TronColors.primaryText)
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 20))
+                        .foregroundColor(TronColors.green)
+                        .neonGlow(color: TronColors.green, radius: 5)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .background(isSelected ? TronColors.green.opacity(0.1) : TronColors.cardBackground)
+            .cornerRadius(10)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isSelected ? TronColors.green.opacity(0.5) : TronColors.gridLine.opacity(0.3), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    var fieldIcon: String {
+        switch field {
+        case .theDam: return "water.waves"
+        case .theSpreadingGrounds: return "leaf.fill"
+        case .theAirfield: return "airplane"
+        }
     }
 }
 

@@ -1,6 +1,6 @@
 //
 //  StatsService.swift
-//  StickballStats
+//  Dong Country Ledger 5000
 //
 //  Firebase Firestore service for real-time cloud sync
 //
@@ -14,38 +14,64 @@ class StatsService: ObservableObject {
     private let db = Firestore.firestore()
     private var playersListener: ListenerRegistration?
     private var statsListener: ListenerRegistration?
+    private var gameWeekInfoListener: ListenerRegistration?
 
     @Published var players: [Player] = []
     @Published var weeklyStats: [WeeklyStats] = []
     @Published var yearlyStats: [YearlyStats] = []
+    @Published var gameWeekInfos: [Int: GameWeekInfo] = [:]  // weekNumber -> info
     @Published var isLoading = false
     @Published var errorMessage: String?
 
-    @Published var currentYear: Int
-    @Published var currentWeek: Int
+    // Season schedule
+    let schedule = SeasonSchedule.shared
+
+    // Current week index (0-based) in the season schedule
+    @Published var currentWeekIndex: Int
+
+    // Computed properties for current week
+    var currentGameWeek: GameWeek? {
+        schedule.gameWeek(atIndex: currentWeekIndex)
+    }
+
+    var currentWeekNumber: Int {
+        currentGameWeek?.weekNumber ?? 1
+    }
+
+    // Alias for backward compatibility
+    var currentWeek: Int {
+        currentWeekNumber
+    }
+
+    var currentYear: Int {
+        currentGameWeek?.year ?? 2026
+    }
 
     init() {
-        // Get current week and year
-        let calendar = Calendar.current
-        let now = Date()
-        self.currentYear = calendar.component(.year, from: now)
-        self.currentWeek = calendar.component(.weekOfYear, from: now)
+        // Start at the most recent game that has been played
+        self.currentWeekIndex = SeasonSchedule.shared.currentWeekIndex()
 
         print("🚀 StatsService initializing...")
-        print("📅 Current week: \(currentWeek), year: \(currentYear)")
+        print("📅 Current week index: \(currentWeekIndex), week number: \(currentWeekNumber)")
+        if let gameWeek = currentGameWeek {
+            print("📅 Game date: \(gameWeek.formattedDate)")
+            if let event = gameWeek.specialEvent {
+                print("🎉 Special event: \(event.rawValue)")
+            }
+        }
         setupListeners()
     }
 
     deinit {
         playersListener?.remove()
         statsListener?.remove()
+        gameWeekInfoListener?.remove()
     }
 
     // MARK: - Real-time Listeners
 
     private func setupListeners() {
         // Listen for player changes
-        // Note: Using simple query to avoid requiring composite index
         playersListener = db.collection("players")
             .addSnapshotListener { [weak self] snapshot, error in
                 Task { @MainActor in
@@ -62,7 +88,6 @@ class StatsService: ObservableObject {
 
                     print("✅ Loaded \(documents.count) player documents")
 
-                    // Filter and sort in memory to avoid needing composite index
                     self?.players = documents.compactMap { doc in
                         try? doc.data(as: Player.self)
                     }
@@ -73,7 +98,7 @@ class StatsService: ObservableObject {
                 }
             }
 
-        // Listen for stats changes for current year
+        // Listen for all stats (we filter by season in memory)
         statsListener = db.collection("weeklyStats")
             .addSnapshotListener { [weak self] snapshot, error in
                 Task { @MainActor in
@@ -90,15 +115,34 @@ class StatsService: ObservableObject {
 
                     print("✅ Loaded \(documents.count) stats documents")
 
-                    // Filter by year in memory
-                    let currentYear = self?.currentYear ?? Calendar.current.component(.year, from: Date())
                     self?.weeklyStats = documents.compactMap { doc in
                         try? doc.data(as: WeeklyStats.self)
                     }
-                    .filter { $0.year == currentYear }
                     .sorted { ($0.weekNumber, $0.playerName) < ($1.weekNumber, $1.playerName) }
 
-                    self?.calculateYearlyStats()
+                    self?.calculateSeasonStats()
+                }
+            }
+
+        // Listen for game week info (field selections)
+        gameWeekInfoListener = db.collection("gameWeekInfo")
+            .addSnapshotListener { [weak self] snapshot, error in
+                Task { @MainActor in
+                    if let error = error {
+                        print("❌ Firestore gameWeekInfo error: \(error.localizedDescription)")
+                        return
+                    }
+
+                    guard let documents = snapshot?.documents else { return }
+
+                    var infos: [Int: GameWeekInfo] = [:]
+                    for doc in documents {
+                        if let info = try? doc.data(as: GameWeekInfo.self) {
+                            infos[info.weekNumber] = info
+                        }
+                    }
+                    self?.gameWeekInfos = infos
+                    print("✅ Loaded \(infos.count) game week infos")
                 }
             }
     }
@@ -126,7 +170,6 @@ class StatsService: ObservableObject {
 
     func deletePlayer(_ player: Player) async throws {
         guard let playerId = player.id else { return }
-        // Soft delete - just mark as inactive
         try await db.collection("players").document(playerId).updateData([
             "isActive": false,
             "updatedAt": Date()
@@ -140,7 +183,6 @@ class StatsService: ObservableObject {
             throw NSError(domain: "StatsService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Player ID is nil"])
         }
 
-        // Check if stats already exist
         let query = db.collection("weeklyStats")
             .whereField("playerId", isEqualTo: playerId)
             .whereField("weekNumber", isEqualTo: week)
@@ -153,7 +195,6 @@ class StatsService: ObservableObject {
             return existingStats
         }
 
-        // Create new stats entry
         var newStats = WeeklyStats(playerId: playerId, playerName: player.name, weekNumber: week, year: year)
         let docRef = try db.collection("weeklyStats").addDocument(from: newStats)
         newStats.id = docRef.documentID
@@ -181,27 +222,68 @@ class StatsService: ObservableObject {
         try await batch.commit()
     }
 
+    // MARK: - Game Week Info (Field Selection)
+
+    func getOrCreateGameWeekInfo(for weekNumber: Int) async throws -> GameWeekInfo {
+        if let existing = gameWeekInfos[weekNumber] {
+            return existing
+        }
+
+        let query = db.collection("gameWeekInfo")
+            .whereField("weekNumber", isEqualTo: weekNumber)
+
+        let snapshot = try await query.getDocuments()
+
+        if let existingDoc = snapshot.documents.first,
+           let existingInfo = try? existingDoc.data(as: GameWeekInfo.self) {
+            return existingInfo
+        }
+
+        var newInfo = GameWeekInfo(weekNumber: weekNumber)
+        let docRef = try db.collection("gameWeekInfo").addDocument(from: newInfo)
+        newInfo.id = docRef.documentID
+        return newInfo
+    }
+
+    func updateGameWeekField(weekNumber: Int, field: GameField?) async throws {
+        var info = try await getOrCreateGameWeekInfo(for: weekNumber)
+        info.setField(field)
+
+        if let infoId = info.id {
+            try db.collection("gameWeekInfo").document(infoId).setData(from: info)
+        }
+    }
+
+    func getFieldForWeek(_ weekNumber: Int) -> GameField? {
+        return gameWeekInfos[weekNumber]?.gameField
+    }
+
     // MARK: - Stats Calculations
 
-    func calculateYearlyStats() {
+    func calculateSeasonStats() {
         var statsDict: [String: YearlyStats] = [:]
 
-        for weekly in weeklyStats where weekly.year == currentYear {
-            if var yearly = statsDict[weekly.playerId] {
-                yearly.addWeeklyStats(weekly)
-                statsDict[weekly.playerId] = yearly
-            } else {
-                var newYearly = YearlyStats(playerId: weekly.playerId, playerName: weekly.playerName, year: currentYear)
-                newYearly.addWeeklyStats(weekly)
-                statsDict[weekly.playerId] = newYearly
+        // Include all stats from the season (both 2025 and 2026 portions)
+        for weekly in weeklyStats {
+            // Check if this week is part of our season
+            if schedule.gameWeek(forWeekNumber: weekly.weekNumber) != nil {
+                let year = 2026 // Use consistent year for season stats
+                if var yearly = statsDict[weekly.playerId] {
+                    yearly.addWeeklyStats(weekly)
+                    statsDict[weekly.playerId] = yearly
+                } else {
+                    var newYearly = YearlyStats(playerId: weekly.playerId, playerName: weekly.playerName, year: year)
+                    newYearly.addWeeklyStats(weekly)
+                    statsDict[weekly.playerId] = newYearly
+                }
             }
         }
 
-        yearlyStats = Array(statsDict.values).sorted { $0.totalPoints > $1.totalPoints }
+        yearlyStats = Array(statsDict.values).sorted { $0.totalDongs > $1.totalDongs }
     }
 
     func getWeeklyStatsForWeek(_ week: Int) -> [WeeklyStats] {
-        return weeklyStats.filter { $0.weekNumber == week && $0.year == currentYear }
+        return weeklyStats.filter { $0.weekNumber == week }
     }
 
     func getStatsForPlayer(_ playerId: String) -> [WeeklyStats] {
@@ -211,51 +293,35 @@ class StatsService: ObservableObject {
     // MARK: - Week Navigation
 
     func previousWeek() {
-        if currentWeek > 1 {
-            currentWeek -= 1
-        } else {
-            currentWeek = 52
-            currentYear -= 1
-            refreshStatsListener()
+        if currentWeekIndex > 0 {
+            currentWeekIndex -= 1
+            print("⬅️ Moved to week \(currentWeekNumber)")
         }
     }
 
     func nextWeek() {
-        let calendar = Calendar.current
-        let maxWeek = calendar.component(.weekOfYear, from: Date())
-        let thisYear = calendar.component(.year, from: Date())
-
-        if currentYear < thisYear || currentWeek < maxWeek {
-            if currentWeek < 52 {
-                currentWeek += 1
-            } else {
-                currentWeek = 1
-                currentYear += 1
-                refreshStatsListener()
-            }
+        let maxIndex = schedule.currentWeekIndex()
+        if currentWeekIndex < maxIndex {
+            currentWeekIndex += 1
+            print("➡️ Moved to week \(currentWeekNumber)")
+        } else {
+            print("⚠️ Cannot advance past current date")
         }
     }
 
-    private func refreshStatsListener() {
-        statsListener?.remove()
+    func canGoNext() -> Bool {
+        return currentWeekIndex < schedule.currentWeekIndex()
+    }
 
-        statsListener = db.collection("weeklyStats")
-            .whereField("year", isEqualTo: currentYear)
-            .addSnapshotListener { [weak self] snapshot, error in
-                Task { @MainActor in
-                    if let error = error {
-                        self?.errorMessage = "Failed to load stats: \(error.localizedDescription)"
-                        return
-                    }
+    func canGoPrevious() -> Bool {
+        return currentWeekIndex > 0
+    }
 
-                    guard let documents = snapshot?.documents else { return }
-
-                    self?.weeklyStats = documents.compactMap { doc in
-                        try? doc.data(as: WeeklyStats.self)
-                    }.sorted { ($0.weekNumber, $0.playerName) < ($1.weekNumber, $1.playerName) }
-
-                    self?.calculateYearlyStats()
-                }
-            }
+    // Jump to specific week
+    func goToWeek(index: Int) {
+        let maxIndex = schedule.currentWeekIndex()
+        if index >= 0 && index <= maxIndex {
+            currentWeekIndex = index
+        }
     }
 }

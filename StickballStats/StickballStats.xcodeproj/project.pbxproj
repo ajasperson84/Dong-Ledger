@@ -24,6 +24,8 @@
 		AA0019 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1017; };
 		AA0020 /* NameShortener.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1018; };
 		AA0021 /* WeeklyPlayerSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1019; };
+		AA0022 /* SeasonSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1020; };
+		AA0023 /* GameWeekInfo.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1021; };
 		AA0015 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA1015; };
 		AA0016 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = AA1016; };
 		AA0017 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = AA2001; };
@@ -48,6 +50,8 @@
 		AA1017 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		AA1018 /* NameShortener.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NameShortener.swift; sourceTree = "<group>"; };
 		AA1019 /* WeeklyPlayerSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeeklyPlayerSelectionView.swift; sourceTree = "<group>"; };
+		AA1020 /* SeasonSchedule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SeasonSchedule.swift; sourceTree = "<group>"; };
+		AA1021 /* GameWeekInfo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameWeekInfo.swift; sourceTree = "<group>"; };
 		AA1015 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA1016 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		AA3001 /* StickballStats.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StickballStats.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -103,6 +107,8 @@
 			children = (
 				AA1003 /* Player.swift */,
 				AA1004 /* WeeklyStats.swift */,
+				AA1020 /* SeasonSchedule.swift */,
+				AA1021 /* GameWeekInfo.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -242,6 +248,8 @@
 				AA0019 /* SplashView.swift in Sources */,
 				AA0020 /* NameShortener.swift in Sources */,
 				AA0021 /* WeeklyPlayerSelectionView.swift in Sources */,
+				AA0022 /* SeasonSchedule.swift in Sources */,
+				AA0023 /* GameWeekInfo.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

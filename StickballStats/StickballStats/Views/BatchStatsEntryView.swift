@@ -32,14 +32,28 @@ struct BatchStatsEntryView: View {
                     // Week header
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("BATCH ENTRY")
-                                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                .foregroundColor(TronColors.secondaryText)
+                            // Special event if any
+                            if let gameWeek = statsService.currentGameWeek, let event = gameWeek.specialEvent {
+                                Text(event.rawValue.uppercased())
+                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                                    .foregroundColor(TronColors.magenta)
+                            } else {
+                                Text("BATCH ENTRY")
+                                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                    .foregroundColor(TronColors.secondaryText)
+                            }
 
-                            Text("WEEK \(statsService.currentWeek)")
+                            Text("WEEK \(statsService.currentWeekNumber)")
                                 .font(.system(size: 20, weight: .bold, design: .monospaced))
                                 .foregroundColor(TronColors.cyan)
                                 .neonGlow(color: TronColors.cyan, radius: 5)
+
+                            // Show date
+                            if let gameWeek = statsService.currentGameWeek {
+                                Text(gameWeek.formattedDate.uppercased())
+                                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                    .foregroundColor(TronColors.dimText)
+                            }
                         }
 
                         Spacer()
