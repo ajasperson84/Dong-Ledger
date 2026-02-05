@@ -121,8 +121,7 @@ struct QuickAddPlayerBar: View {
             .cornerRadius(10)
             .overlay(
                 RoundedRectangle(cornerRadius: 10)
-                    .stroke(TronColors.green.opacity(0.3), lineWidth: 1)
-                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [5]))
+                    .stroke(TronColors.green.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [5]))
             )
         }
     }
