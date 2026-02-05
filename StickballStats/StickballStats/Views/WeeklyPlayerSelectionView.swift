@@ -12,6 +12,7 @@ struct WeeklyPlayerSelectionView: View {
     @Environment(\.dismiss) var dismiss
 
     @State private var selectedPlayerIds: Set<String> = []
+    @State private var selectedField: GameField? = nil
     @State private var isSaving = false
 
     var body: some View {
@@ -48,6 +49,29 @@ struct WeeklyPlayerSelectionView: View {
                             .padding(.top, 4)
                     }
                     .padding(.vertical, 16)
+
+                    // Field selection
+                    VStack(spacing: 8) {
+                        Text("FIELD")
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundColor(TronColors.dimText)
+
+                        HStack(spacing: 8) {
+                            ForEach(GameField.allCases, id: \.self) { field in
+                                FieldChip(
+                                    field: field,
+                                    isSelected: selectedField == field,
+                                    onTap: {
+                                        withAnimation(.easeOut(duration: 0.15)) {
+                                            selectedField = field
+                                        }
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 12)
 
                     // Quick actions
                     HStack(spacing: 12) {
@@ -185,12 +209,20 @@ struct WeeklyPlayerSelectionView: View {
         // Pre-select players who already have stats for this week
         let existingStats = statsService.getWeeklyStatsForWeek(statsService.currentWeek)
         selectedPlayerIds = Set(existingStats.map { $0.playerId })
+
+        // Load existing field selection
+        selectedField = statsService.getFieldForWeek(statsService.currentWeekNumber)
     }
 
     private func confirmSelection() {
         isSaving = true
 
         Task {
+            // Save field selection
+            if let field = selectedField {
+                try? await statsService.updateGameWeekField(weekNumber: statsService.currentWeekNumber, field: field)
+            }
+
             // Create stats entries for all selected players
             for player in statsService.players {
                 guard let playerId = player.id, selectedPlayerIds.contains(playerId) else { continue }
@@ -210,6 +242,42 @@ struct WeeklyPlayerSelectionView: View {
                 isSaving = false
                 dismiss()
             }
+        }
+    }
+}
+
+// MARK: - Field Chip
+struct FieldChip: View {
+    let field: GameField
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 4) {
+                Image(systemName: fieldIcon)
+                    .font(.system(size: 10))
+                Text(field.shortName)
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+            }
+            .foregroundColor(isSelected ? TronColors.darkBackground : TronColors.secondaryText)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 8)
+            .background(isSelected ? TronColors.green : TronColors.surfaceBackground)
+            .cornerRadius(8)
+            .overlay(
+                RoundedRectangle(cornerRadius: 8)
+                    .stroke(isSelected ? TronColors.green : TronColors.gridLine.opacity(0.3), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    var fieldIcon: String {
+        switch field {
+        case .theDam: return "water.waves"
+        case .theSpreadingGrounds: return "leaf.fill"
+        case .theAirfield: return "airplane"
         }
     }
 }

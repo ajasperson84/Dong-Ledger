@@ -34,7 +34,7 @@ struct ContentView: View {
             TabView(selection: $selectedTab) {
                 LeaderboardView()
                     .tabItem {
-                        Label("DONGS", systemImage: "trophy")
+                        Label("SEASON", systemImage: "trophy")
                     }
                     .tag(0)
 

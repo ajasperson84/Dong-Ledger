@@ -208,10 +208,18 @@ struct CompactStatBadge: View {
 // MARK: - Week Navigation Header
 struct WeekNavigationHeader: View {
     @EnvironmentObject var statsService: StatsService
-    @State private var showingFieldPicker = false
 
     var currentField: GameField? {
         statsService.getFieldForWeek(statsService.currentWeekNumber)
+    }
+
+    var fieldIcon: String {
+        guard let field = currentField else { return "mappin.circle" }
+        switch field {
+        case .theDam: return "water.waves"
+        case .theSpreadingGrounds: return "leaf.fill"
+        case .theAirfield: return "airplane"
+        }
     }
 
     var body: some View {
@@ -266,153 +274,28 @@ struct WeekNavigationHeader: View {
                 .disabled(!statsService.canGoNext())
             }
 
-            // Field selector row
-            Button(action: { showingFieldPicker = true }) {
+            // Field display (read-only)
+            if let field = currentField {
                 HStack(spacing: 6) {
-                    Image(systemName: "mappin.circle.fill")
+                    Image(systemName: fieldIcon)
                         .font(.system(size: 12))
-
-                    if let field = currentField {
-                        Text(field.rawValue.uppercased())
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    } else {
-                        Text("SELECT FIELD")
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    }
-
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 9))
+                    Text(field.rawValue.uppercased())
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
                 }
-                .foregroundColor(currentField != nil ? TronColors.green : TronColors.secondaryText)
+                .foregroundColor(TronColors.green)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 6)
                 .background(TronColors.surfaceBackground)
                 .cornerRadius(6)
                 .overlay(
                     RoundedRectangle(cornerRadius: 6)
-                        .stroke(currentField != nil ? TronColors.green.opacity(0.5) : TronColors.gridLine.opacity(0.3), lineWidth: 1)
+                        .stroke(TronColors.green.opacity(0.5), lineWidth: 1)
                 )
-            }
-            .sheet(isPresented: $showingFieldPicker) {
-                FieldPickerView(weekNumber: statsService.currentWeekNumber)
-                    .environmentObject(statsService)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(TronColors.cardBackground.opacity(0.8))
-    }
-}
-
-// MARK: - Field Picker View
-struct FieldPickerView: View {
-    @EnvironmentObject var statsService: StatsService
-    @Environment(\.dismiss) var dismiss
-    let weekNumber: Int
-
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                TronGridBackground()
-
-                VStack(spacing: 20) {
-                    Text("SELECT FIELD")
-                        .font(.system(size: 18, weight: .bold, design: .monospaced))
-                        .foregroundColor(TronColors.cyan)
-                        .neonGlow(color: TronColors.cyan, radius: 5)
-                        .padding(.top, 20)
-
-                    VStack(spacing: 12) {
-                        ForEach(GameField.allCases, id: \.self) { field in
-                            FieldOptionButton(
-                                field: field,
-                                isSelected: statsService.getFieldForWeek(weekNumber) == field,
-                                onSelect: {
-                                    Task {
-                                        try? await statsService.updateGameWeekField(weekNumber: weekNumber, field: field)
-                                        dismiss()
-                                    }
-                                }
-                            )
-                        }
-
-                        // Clear selection option
-                        Button(action: {
-                            Task {
-                                try? await statsService.updateGameWeekField(weekNumber: weekNumber, field: nil)
-                                dismiss()
-                            }
-                        }) {
-                            Text("CLEAR SELECTION")
-                                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                .foregroundColor(TronColors.orange)
-                                .padding(.vertical, 12)
-                        }
-                    }
-                    .padding(.horizontal, 24)
-
-                    Spacer()
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .foregroundColor(TronColors.orange)
-                }
-            }
-        }
-        .presentationDetents([.medium])
-    }
-}
-
-// MARK: - Field Option Button
-struct FieldOptionButton: View {
-    let field: GameField
-    let isSelected: Bool
-    let onSelect: () -> Void
-
-    var body: some View {
-        Button(action: onSelect) {
-            HStack {
-                Image(systemName: fieldIcon)
-                    .font(.system(size: 20))
-                    .foregroundColor(isSelected ? TronColors.green : TronColors.secondaryText)
-                    .frame(width: 32)
-
-                Text(field.rawValue.uppercased())
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                    .foregroundColor(isSelected ? TronColors.green : TronColors.primaryText)
-
-                Spacer()
-
-                if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 20))
-                        .foregroundColor(TronColors.green)
-                        .neonGlow(color: TronColors.green, radius: 5)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background(isSelected ? TronColors.green.opacity(0.1) : TronColors.cardBackground)
-            .cornerRadius(10)
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(isSelected ? TronColors.green.opacity(0.5) : TronColors.gridLine.opacity(0.3), lineWidth: 1)
-            )
-        }
-        .buttonStyle(.plain)
-    }
-
-    var fieldIcon: String {
-        switch field {
-        case .theDam: return "water.waves"
-        case .theSpreadingGrounds: return "leaf.fill"
-        case .theAirfield: return "airplane"
-        }
     }
 }
 
