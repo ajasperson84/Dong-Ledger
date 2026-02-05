@@ -1,6 +1,6 @@
 //
 //  ContentView.swift
-//  StickballStats
+//  Dong Country Ledger 5000
 //
 //  Main navigation view with Tron aesthetic
 //
@@ -10,23 +10,37 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject var statsService: StatsService
     @State private var selectedTab = 0
+    @State private var showingSplash = true
 
     var body: some View {
+        ZStack {
+            if showingSplash {
+                SplashView(isActive: $showingSplash)
+                    .transition(.opacity)
+            } else {
+                mainContent
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.3), value: showingSplash)
+    }
+
+    private var mainContent: some View {
         ZStack {
             // Tron grid background
             TronGridBackground()
 
-            // Main content
+            // Main content - Leaderboard is now first (main page)
             TabView(selection: $selectedTab) {
-                WeeklyStatsView()
+                LeaderboardView()
                     .tabItem {
-                        Label("WEEKLY", systemImage: "calendar.badge.clock")
+                        Label("DONGS", systemImage: "trophy")
                     }
                     .tag(0)
 
-                LeaderboardView()
+                WeeklyStatsView()
                     .tabItem {
-                        Label("RANKINGS", systemImage: "trophy")
+                        Label("WEEKLY", systemImage: "calendar.badge.clock")
                     }
                     .tag(1)
 

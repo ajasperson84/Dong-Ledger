@@ -1,19 +1,17 @@
 //
 //  LeaderboardView.swift
-//  StickballStats
+//  Dong Country Ledger 5000
 //
-//  Year-long leaderboard and statistics
+//  Season leaderboard and statistics
 //
 
 import SwiftUI
 
 struct LeaderboardView: View {
     @EnvironmentObject var statsService: StatsService
-    @State private var selectedCategory: StatCategory = .total
-    @State private var showingYearPicker = false
+    @State private var selectedCategory: StatCategory = .dongs  // Default to dongs
 
     enum StatCategory: String, CaseIterable {
-        case total = "TOTAL"
         case dongs = "DONGS"
         case drops = "DROPS"
         case doublePlays = "DBL PLY"
@@ -22,7 +20,6 @@ struct LeaderboardView: View {
 
         var color: Color {
             switch self {
-            case .total: return TronColors.cyan
             case .dongs: return TronColors.cyan
             case .drops: return TronColors.orange
             case .doublePlays: return TronColors.magenta
@@ -34,8 +31,6 @@ struct LeaderboardView: View {
 
     var sortedStats: [YearlyStats] {
         switch selectedCategory {
-        case .total:
-            return statsService.yearlyStats.sorted { $0.totalPoints > $1.totalPoints }
         case .dongs:
             return statsService.yearlyStats.sorted { $0.totalDongs > $1.totalDongs }
         case .drops:
@@ -55,35 +50,17 @@ struct LeaderboardView: View {
                 TronGridBackground()
 
                 VStack(spacing: 0) {
-                    // Year selector
-                    HStack {
-                        Button(action: {
-                            statsService.currentYear -= 1
-                        }) {
-                            Image(systemName: "chevron.left")
-                                .foregroundColor(TronColors.cyan)
-                        }
+                    // Season header
+                    VStack(spacing: 4) {
+                        Text("SEASON STANDINGS")
+                            .font(.system(size: 14, weight: .medium, design: .monospaced))
+                            .foregroundColor(TronColors.secondaryText)
 
-                        Spacer()
-
-                        Text("\(statsService.currentYear)")
-                            .font(.system(size: 32, weight: .bold, design: .monospaced))
-                            .foregroundColor(TronColors.yellow)
-                            .neonGlow(color: TronColors.yellow, radius: 10)
-
-                        Spacer()
-
-                        Button(action: {
-                            let currentYear = Calendar.current.component(.year, from: Date())
-                            if statsService.currentYear < currentYear {
-                                statsService.currentYear += 1
-                            }
-                        }) {
-                            Image(systemName: "chevron.right")
-                                .foregroundColor(TronColors.cyan)
-                        }
+                        Text("DONG COUNTRY")
+                            .font(.system(size: 28, weight: .black, design: .monospaced))
+                            .foregroundColor(TronColors.cyan)
+                            .neonGlow(color: TronColors.cyan, radius: 10)
                     }
-                    .padding(.horizontal, 24)
                     .padding(.vertical, 16)
 
                     // Category filter
@@ -174,7 +151,6 @@ struct LeaderboardRow: View {
 
     var highlightedValue: Int {
         switch category {
-        case .total: return stats.totalPoints
         case .dongs: return stats.totalDongs
         case .drops: return stats.totalDrops
         case .doublePlays: return stats.totalDoublePlays

@@ -21,6 +21,7 @@
 		AA0012 /* LeaderboardView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1012; };
 		AA0013 /* PlayersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1013; };
 		AA0014 /* AddEditPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1014; };
+		AA0019 /* SplashView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1017; };
 		AA0015 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA1015; };
 		AA0016 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = AA1016; };
 		AA0017 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = AA2001; };
@@ -42,6 +43,7 @@
 		AA1012 /* LeaderboardView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LeaderboardView.swift; sourceTree = "<group>"; };
 		AA1013 /* PlayersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayersView.swift; sourceTree = "<group>"; };
 		AA1014 /* AddEditPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditPlayerView.swift; sourceTree = "<group>"; };
+		AA1017 /* SplashView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashView.swift; sourceTree = "<group>"; };
 		AA1015 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA1016 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		AA3001 /* StickballStats.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StickballStats.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -110,6 +112,7 @@
 				AA1012 /* LeaderboardView.swift */,
 				AA1013 /* PlayersView.swift */,
 				AA1014 /* AddEditPlayerView.swift */,
+				AA1017 /* SplashView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -230,6 +233,7 @@
 				AA0012 /* LeaderboardView.swift in Sources */,
 				AA0013 /* PlayersView.swift in Sources */,
 				AA0014 /* AddEditPlayerView.swift in Sources */,
+				AA0019 /* SplashView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -365,7 +369,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Stickball Stats";
+				INFOPLIST_KEY_CFBundleDisplayName = "Dong Country Ledger 5000";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -394,7 +398,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = "Stickball Stats";
+				INFOPLIST_KEY_CFBundleDisplayName = "Dong Country Ledger 5000";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

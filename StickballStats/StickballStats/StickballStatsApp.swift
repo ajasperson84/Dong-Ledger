@@ -1,6 +1,6 @@
 //
 //  StickballStatsApp.swift
-//  StickballStats
+//  Dong Country Ledger 5000
 //
 //  Stickball League Statistics Tracker
 //
@@ -17,7 +17,7 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 }
 
 @main
-struct StickballStatsApp: App {
+struct DongCountryLedgerApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var statsService = StatsService()
 
