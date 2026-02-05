@@ -31,6 +31,8 @@ class StatsService: ObservableObject {
         self.currentYear = calendar.component(.year, from: now)
         self.currentWeek = calendar.component(.weekOfYear, from: now)
 
+        print("🚀 StatsService initializing...")
+        print("📅 Current week: \(currentWeek), year: \(currentYear)")
         setupListeners()
     }
 
@@ -43,39 +45,58 @@ class StatsService: ObservableObject {
 
     private func setupListeners() {
         // Listen for player changes
+        // Note: Using simple query to avoid requiring composite index
         playersListener = db.collection("players")
-            .whereField("isActive", isEqualTo: true)
-            .order(by: "name")
             .addSnapshotListener { [weak self] snapshot, error in
                 Task { @MainActor in
                     if let error = error {
+                        print("❌ Firestore players error: \(error.localizedDescription)")
                         self?.errorMessage = "Failed to load players: \(error.localizedDescription)"
                         return
                     }
 
-                    guard let documents = snapshot?.documents else { return }
+                    guard let documents = snapshot?.documents else {
+                        print("⚠️ No player documents found")
+                        return
+                    }
 
+                    print("✅ Loaded \(documents.count) player documents")
+
+                    // Filter and sort in memory to avoid needing composite index
                     self?.players = documents.compactMap { doc in
                         try? doc.data(as: Player.self)
                     }
+                    .filter { $0.isActive }
+                    .sorted { $0.name.lowercased() < $1.name.lowercased() }
+
+                    print("✅ Active players: \(self?.players.count ?? 0)")
                 }
             }
 
         // Listen for stats changes for current year
         statsListener = db.collection("weeklyStats")
-            .whereField("year", isEqualTo: currentYear)
             .addSnapshotListener { [weak self] snapshot, error in
                 Task { @MainActor in
                     if let error = error {
+                        print("❌ Firestore stats error: \(error.localizedDescription)")
                         self?.errorMessage = "Failed to load stats: \(error.localizedDescription)"
                         return
                     }
 
-                    guard let documents = snapshot?.documents else { return }
+                    guard let documents = snapshot?.documents else {
+                        print("⚠️ No stats documents found")
+                        return
+                    }
 
+                    print("✅ Loaded \(documents.count) stats documents")
+
+                    // Filter by year in memory
+                    let currentYear = self?.currentYear ?? Calendar.current.component(.year, from: Date())
                     self?.weeklyStats = documents.compactMap { doc in
                         try? doc.data(as: WeeklyStats.self)
-                    }.sorted { ($0.weekNumber, $0.playerName) < ($1.weekNumber, $1.playerName) }
+                    }
+                    .filter { $0.year == currentYear }
+                    .sorted { ($0.weekNumber, $0.playerName) < ($1.weekNumber, $1.playerName) }
 
                     self?.calculateYearlyStats()
                 }
@@ -86,7 +107,14 @@ class StatsService: ObservableObject {
 
     func addPlayer(name: String, jerseyNumber: Int? = nil, teamName: String? = nil) async throws {
         let player = Player(name: name, jerseyNumber: jerseyNumber, teamName: teamName)
-        try db.collection("players").addDocument(from: player)
+        print("📝 Adding player: \(name)")
+        do {
+            let docRef = try db.collection("players").addDocument(from: player)
+            print("✅ Player added with ID: \(docRef.documentID)")
+        } catch {
+            print("❌ Failed to add player: \(error.localizedDescription)")
+            throw error
+        }
     }
 
     func updatePlayer(_ player: Player) async throws {
