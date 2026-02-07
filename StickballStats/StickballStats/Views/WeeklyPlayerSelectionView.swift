@@ -62,9 +62,11 @@ struct WeeklyPlayerSelectionView: View {
                                     field: field,
                                     isSelected: selectedField == field,
                                     onTap: {
+                                        print("🏟️ Field tapped: \(field.rawValue)")
                                         withAnimation(.easeOut(duration: 0.15)) {
                                             selectedField = field
                                         }
+                                        print("🏟️ selectedField is now: \(selectedField?.rawValue ?? "nil")")
                                     }
                                 )
                             }
@@ -217,14 +219,22 @@ struct WeeklyPlayerSelectionView: View {
     private func confirmSelection() {
         isSaving = true
 
+        print("🎯 confirmSelection called")
+        print("🎯 selectedField: \(selectedField?.rawValue ?? "nil")")
+        print("🎯 currentWeekNumber: \(statsService.currentWeekNumber)")
+
         Task {
             // Save field selection
             if let field = selectedField {
+                print("🎯 Saving field: \(field.rawValue)")
                 do {
                     try await statsService.updateGameWeekField(weekNumber: statsService.currentWeekNumber, field: field)
+                    print("🎯 Field saved successfully")
                 } catch {
                     print("❌ Error saving field selection: \(error)")
                 }
+            } else {
+                print("⚠️ No field selected, skipping field save")
             }
 
             // Create stats entries for all selected players
