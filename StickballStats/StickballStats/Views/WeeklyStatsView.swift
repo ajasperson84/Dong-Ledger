@@ -262,12 +262,12 @@ struct WeekNavigationHeader: View {
                 .disabled(!statsService.canGoNext())
             }
 
-            // Field selector button - id forces refresh when lastFieldUpdate changes
+            // Field selector button
             FieldSelectorButton(
-                currentField: statsService.gameWeekInfos[statsService.currentWeekNumber]?.gameField,
+                weekNumber: statsService.currentWeekNumber,
                 onTap: { showingFieldPicker = true }
             )
-            .id(statsService.lastFieldUpdate)
+            .environmentObject(statsService)
             .sheet(isPresented: $showingFieldPicker) {
                 FieldPickerSheet(weekNumber: statsService.currentWeekNumber)
                     .environmentObject(statsService)
@@ -281,8 +281,13 @@ struct WeekNavigationHeader: View {
 
 // MARK: - Field Selector Button
 struct FieldSelectorButton: View {
-    let currentField: GameField?
+    @EnvironmentObject var statsService: StatsService
+    let weekNumber: Int
     let onTap: () -> Void
+
+    var currentField: GameField? {
+        statsService.gameWeekInfos[weekNumber]?.gameField
+    }
 
     var fieldIcon: String {
         guard let field = currentField else { return "mappin.circle" }
@@ -294,6 +299,9 @@ struct FieldSelectorButton: View {
     }
 
     var body: some View {
+        // Force dependency on lastFieldUpdate to ensure refresh
+        let _ = statsService.lastFieldUpdate
+
         Button(action: onTap) {
             HStack(spacing: 6) {
                 Image(systemName: fieldIcon)
