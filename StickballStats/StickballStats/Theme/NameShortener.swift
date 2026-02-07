@@ -2,42 +2,54 @@
 //  NameShortener.swift
 //  Dong Country Ledger 5000
 //
-//  Utility to shorten player names for stat line display
-//  Rules:
-//  - Single word: first 3-4 chars (e.g., "Salary" -> "Sal")
-//  - Two+ words: initials (e.g., "Dong Robber" -> "DR")
-//  - "The X": drop "The", use X (e.g., "The Deal" -> "Deal")
-//  - Max 4 characters, no line breaks
+//  Custom player name abbreviations for stat line display
+//  Max 5 characters
 //
 
 import Foundation
 
 extension String {
-    /// Returns a shortened version of the name for stat line display
-    /// Max 4 characters, optimized for readability
+    /// Custom name abbreviations for stickball players
+    private static let nameMap: [String: String] = [
+        "Salary": "$al",
+        "The Deal": "Deal",
+        "Dong Robber": "Dong",
+        "Baby Boi": "Baby",
+        "Cojones": "CoJo",
+        "Cuidado": "Cui",
+        "Candyman": "Candy",
+        "Flash Dance": "Flash",
+        "Slacker": "Slack",
+        "Goat Cheese": "Goat",
+        "Party Platter": "Party",
+        "Uncle Kimmy": "Dublé",
+        "Extra Credit": "Extra",
+        "Barely Bonds": "Bare",
+        "Rookie Derek": "RookD",
+        "Rookie Coop": "RookC",
+        "Surgeon": "Surge",
+        "Katfish": "Kat",
+        "Hot Tub": "Tub",
+        "Rookie Aiden": "RookA",
+        "Lunch Money": "Lunch",
+        "White Noize": "Noize",
+        "The Swarm": "Swarm",
+        "Boogie Joe": "Boog"
+    ]
+
+    /// Returns the custom short name for stat display
+    /// Falls back to first 5 characters if not in the map
     var shortName: String {
         let trimmed = self.trimmingCharacters(in: .whitespaces)
-        let words = trimmed.split(separator: " ").map { String($0) }
 
-        guard !words.isEmpty else { return "" }
-
-        // Handle "The X" pattern - drop "The" and use the next word
-        if words.count >= 2 && words[0].lowercased() == "the" {
-            let secondWord = words[1]
-            // Return up to 4 characters of the second word
-            return String(secondWord.prefix(4)).uppercased()
+        // Look up in custom map (case-insensitive)
+        for (fullName, shortName) in String.nameMap {
+            if trimmed.lowercased() == fullName.lowercased() {
+                return shortName
+            }
         }
 
-        // Single word name - return first 3-4 characters
-        if words.count == 1 {
-            let name = words[0]
-            // Use 3 chars for shorter names, 4 for longer
-            let length = name.count <= 5 ? 3 : 4
-            return String(name.prefix(length)).uppercased()
-        }
-
-        // Multiple words - use initials (max 4)
-        let initials = words.prefix(4).compactMap { $0.first }.map { String($0) }.joined()
-        return initials.uppercased()
+        // Fallback: return first 5 characters
+        return String(trimmed.prefix(5))
     }
 }

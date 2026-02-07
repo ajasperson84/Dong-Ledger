@@ -150,15 +150,16 @@ struct WeeklyStatRow: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 8) {
-                // Short name (max 4 chars)
+            HStack(spacing: 6) {
+                // Short name (max 5 chars)
                 Text(player.name.shortName)
-                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .font(.system(size: 12, weight: .bold, design: .monospaced))
                     .foregroundColor(TronColors.cyan)
-                    .frame(width: 50, alignment: .leading)
+                    .frame(width: 52, alignment: .leading)
+                    .lineLimit(1)
 
                 // Stats in a row
-                HStack(spacing: 4) {
+                HStack(spacing: 2) {
                     CompactStatBadge(value: stats.dongs, label: "D", color: TronColors.cyan)
                     CompactStatBadge(value: stats.drops, label: "R", color: TronColors.orange)
                     CompactStatBadge(value: stats.doublePlays, label: "DP", color: TronColors.magenta)
@@ -172,7 +173,7 @@ struct WeeklyStatRow: View {
                     .font(.system(size: 10))
                     .foregroundColor(TronColors.dimText)
             }
-            .padding(.horizontal, 12)
+            .padding(.horizontal, 10)
             .padding(.vertical, 10)
             .background(TronColors.cardBackground)
             .cornerRadius(8)
@@ -194,14 +195,14 @@ struct CompactStatBadge: View {
     var body: some View {
         VStack(spacing: 1) {
             Text("\(value)")
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .font(.system(size: 13, weight: .bold, design: .monospaced))
                 .foregroundColor(value > 0 ? color : TronColors.dimText)
 
             Text(label)
                 .font(.system(size: 7, weight: .medium, design: .monospaced))
                 .foregroundColor(color.opacity(0.6))
         }
-        .frame(width: 32)
+        .frame(width: 30)
     }
 }
 
