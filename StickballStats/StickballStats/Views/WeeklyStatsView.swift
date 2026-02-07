@@ -210,19 +210,6 @@ struct WeekNavigationHeader: View {
     @EnvironmentObject var statsService: StatsService
     @State private var showingFieldPicker = false
 
-    var currentField: GameField? {
-        statsService.getFieldForWeek(statsService.currentWeekNumber)
-    }
-
-    var fieldIcon: String {
-        guard let field = currentField else { return "mappin.circle" }
-        switch field {
-        case .theDam: return "water.waves"
-        case .theSpreadingGrounds: return "leaf.fill"
-        case .theAirfield: return "airplane"
-        }
-    }
-
     var body: some View {
         VStack(spacing: 8) {
             // Main navigation row
@@ -276,30 +263,10 @@ struct WeekNavigationHeader: View {
             }
 
             // Field selector button
-            Button(action: { showingFieldPicker = true }) {
-                HStack(spacing: 6) {
-                    Image(systemName: fieldIcon)
-                        .font(.system(size: 12))
-                    if let field = currentField {
-                        Text(field.rawValue.uppercased())
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
-                    } else {
-                        Text("NO FIELD SET")
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    }
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 9))
-                }
-                .foregroundColor(currentField != nil ? TronColors.green : TronColors.dimText)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(TronColors.surfaceBackground)
-                .cornerRadius(6)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 6)
-                        .stroke(currentField != nil ? TronColors.green.opacity(0.5) : TronColors.gridLine.opacity(0.3), lineWidth: 1)
-                )
-            }
+            FieldSelectorButton(
+                currentField: statsService.gameWeekInfos[statsService.currentWeekNumber]?.gameField,
+                onTap: { showingFieldPicker = true }
+            )
             .sheet(isPresented: $showingFieldPicker) {
                 FieldPickerSheet(weekNumber: statsService.currentWeekNumber)
                     .environmentObject(statsService)
@@ -308,6 +275,48 @@ struct WeekNavigationHeader: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
         .background(TronColors.cardBackground.opacity(0.8))
+    }
+}
+
+// MARK: - Field Selector Button
+struct FieldSelectorButton: View {
+    let currentField: GameField?
+    let onTap: () -> Void
+
+    var fieldIcon: String {
+        guard let field = currentField else { return "mappin.circle" }
+        switch field {
+        case .theDam: return "water.waves"
+        case .theSpreadingGrounds: return "leaf.fill"
+        case .theAirfield: return "airplane"
+        }
+    }
+
+    var body: some View {
+        Button(action: onTap) {
+            HStack(spacing: 6) {
+                Image(systemName: fieldIcon)
+                    .font(.system(size: 12))
+                if let field = currentField {
+                    Text(field.rawValue.uppercased())
+                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                } else {
+                    Text("NO FIELD SET")
+                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                }
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 9))
+            }
+            .foregroundColor(currentField != nil ? TronColors.green : TronColors.dimText)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 6)
+            .background(TronColors.surfaceBackground)
+            .cornerRadius(6)
+            .overlay(
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(currentField != nil ? TronColors.green.opacity(0.5) : TronColors.gridLine.opacity(0.3), lineWidth: 1)
+            )
+        }
     }
 }
 

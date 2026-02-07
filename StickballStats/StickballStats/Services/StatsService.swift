@@ -246,21 +246,34 @@ class StatsService: ObservableObject {
     }
 
     func updateGameWeekField(weekNumber: Int, field: GameField?) async throws {
+        print("🔄 updateGameWeekField called for week \(weekNumber) with field: \(field?.rawValue ?? "nil")")
+
         var info = try await getOrCreateGameWeekInfo(for: weekNumber)
+        print("📋 Got/created info with id: \(info.id ?? "nil")")
+
         info.setField(field)
 
         if let infoId = info.id {
             try db.collection("gameWeekInfo").document(infoId).setData(from: info)
+
             // Update local cache immediately so UI reflects the change
             gameWeekInfos[weekNumber] = info
+
+            // Force publish notification
+            objectWillChange.send()
+
             print("✅ Updated field for week \(weekNumber): \(field?.rawValue ?? "none")")
+            print("📊 gameWeekInfos now has \(gameWeekInfos.count) entries")
+            print("📊 Field for week \(weekNumber) is now: \(getFieldForWeek(weekNumber)?.rawValue ?? "nil")")
         } else {
             print("❌ No ID for gameWeekInfo, cannot save")
         }
     }
 
     func getFieldForWeek(_ weekNumber: Int) -> GameField? {
-        return gameWeekInfos[weekNumber]?.gameField
+        let field = gameWeekInfos[weekNumber]?.gameField
+        print("🔍 getFieldForWeek(\(weekNumber)) returning: \(field?.rawValue ?? "nil")")
+        return field
     }
 
     // MARK: - Stats Calculations
