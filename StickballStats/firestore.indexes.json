@@ -1,0 +1,15 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "gameWeekInfo",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "weekNumber",
+          "order": "ASCENDING"
+        }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

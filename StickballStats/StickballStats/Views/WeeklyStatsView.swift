@@ -262,11 +262,12 @@ struct WeekNavigationHeader: View {
                 .disabled(!statsService.canGoNext())
             }
 
-            // Field selector button
+            // Field selector button - id forces refresh when lastFieldUpdate changes
             FieldSelectorButton(
                 currentField: statsService.gameWeekInfos[statsService.currentWeekNumber]?.gameField,
                 onTap: { showingFieldPicker = true }
             )
+            .id(statsService.lastFieldUpdate)
             .sheet(isPresented: $showingFieldPicker) {
                 FieldPickerSheet(weekNumber: statsService.currentWeekNumber)
                     .environmentObject(statsService)

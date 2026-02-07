@@ -20,6 +20,7 @@ class StatsService: ObservableObject {
     @Published var weeklyStats: [WeeklyStats] = []
     @Published var yearlyStats: [YearlyStats] = []
     @Published var gameWeekInfos: [Int: GameWeekInfo] = [:]  // weekNumber -> info
+    @Published var lastFieldUpdate: Date = Date()  // Triggers view refresh when field changes
     @Published var isLoading = false
     @Published var errorMessage: String?
 
@@ -259,8 +260,8 @@ class StatsService: ObservableObject {
             // Update local cache immediately so UI reflects the change
             gameWeekInfos[weekNumber] = info
 
-            // Force publish notification
-            objectWillChange.send()
+            // Update timestamp to trigger view refresh
+            lastFieldUpdate = Date()
 
             print("✅ Updated field for week \(weekNumber): \(field?.rawValue ?? "none")")
             print("📊 gameWeekInfos now has \(gameWeekInfos.count) entries")
