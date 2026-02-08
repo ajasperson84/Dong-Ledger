@@ -44,11 +44,23 @@ struct ContentView: View {
                     }
                     .tag(1)
 
+                PastSeasonsView()
+                    .tabItem {
+                        Label("HISTORY", systemImage: "clock.arrow.circlepath")
+                    }
+                    .tag(2)
+
+                CareerStatsView()
+                    .tabItem {
+                        Label("CAREERS", systemImage: "star.fill")
+                    }
+                    .tag(3)
+
                 PlayersView()
                     .tabItem {
                         Label("PLAYERS", systemImage: "person.3")
                     }
-                    .tag(2)
+                    .tag(4)
             }
             .tint(TronColors.cyan)
         }

@@ -36,7 +36,7 @@ struct LeaderboardView: View {
         case .drops:
             return statsService.yearlyStats.sorted { $0.totalDrops < $1.totalDrops } // Lower is better
         case .doublePlays:
-            return statsService.yearlyStats.sorted { $0.totalDoublePlays < $1.totalDoublePlays } // Lower is better
+            return statsService.yearlyStats.sorted { $0.totalDoublePlays > $1.totalDoublePlays } // Most first
         case .salamies:
             return statsService.yearlyStats.sorted { $0.totalSalamies > $1.totalSalamies }
         case .wins:

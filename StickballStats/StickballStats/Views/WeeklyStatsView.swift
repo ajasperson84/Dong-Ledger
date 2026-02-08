@@ -20,6 +20,16 @@ struct WeeklyStatsView: View {
         return statsService.players.filter { playerIds.contains($0.id ?? "") }
     }
 
+    // Weekly totals
+    var weeklyTotals: (dongs: Int, drops: Int, doublePlays: Int, salamies: Int) {
+        let weekStats = statsService.getWeeklyStatsForWeek(statsService.currentWeek)
+        let totalDongs = weekStats.reduce(0) { $0 + $1.dongs }
+        let totalDrops = weekStats.reduce(0) { $0 + $1.drops }
+        let totalDPs = weekStats.reduce(0) { $0 + $1.doublePlays }
+        let totalSalamies = weekStats.reduce(0) { $0 + $1.salamies }
+        return (totalDongs, totalDrops, totalDPs, totalSalamies)
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -74,18 +84,29 @@ struct WeeklyStatsView: View {
                     } else {
                         // Show players with their stats
                         ScrollView {
-                            LazyVStack(spacing: 6) {
-                                ForEach(playersThisWeek) { player in
-                                    if let stats = currentWeekStats(for: player) {
-                                        WeeklyStatRow(
-                                            player: player,
-                                            stats: stats,
-                                            onTap: { selectedPlayer = player }
-                                        )
+                            VStack(spacing: 12) {
+                                // Weekly totals summary bar
+                                WeeklyTotalsSummary(
+                                    dongs: weeklyTotals.dongs,
+                                    drops: weeklyTotals.drops,
+                                    doublePlays: weeklyTotals.doublePlays,
+                                    salamies: weeklyTotals.salamies
+                                )
+                                .padding(.horizontal, 12)
+
+                                LazyVStack(spacing: 6) {
+                                    ForEach(playersThisWeek) { player in
+                                        if let stats = currentWeekStats(for: player) {
+                                            WeeklyStatRow(
+                                                player: player,
+                                                stats: stats,
+                                                onTap: { selectedPlayer = player }
+                                            )
+                                        }
                                     }
                                 }
+                                .padding(.horizontal, 12)
                             }
-                            .padding(.horizontal, 12)
                             .padding(.vertical, 12)
                         }
                     }
@@ -426,6 +447,60 @@ struct FieldOptionRow: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Weekly Totals Summary
+struct WeeklyTotalsSummary: View {
+    let dongs: Int
+    let drops: Int
+    let doublePlays: Int
+    let salamies: Int
+
+    var body: some View {
+        HStack(spacing: 0) {
+            TotalStatCell(value: dongs, label: "DONGS", color: TronColors.cyan)
+            Divider()
+                .frame(height: 30)
+                .background(TronColors.gridLine.opacity(0.3))
+            TotalStatCell(value: drops, label: "DROPS", color: TronColors.orange)
+            Divider()
+                .frame(height: 30)
+                .background(TronColors.gridLine.opacity(0.3))
+            TotalStatCell(value: doublePlays, label: "DBL PLY", color: TronColors.magenta)
+            Divider()
+                .frame(height: 30)
+                .background(TronColors.gridLine.opacity(0.3))
+            TotalStatCell(value: salamies, label: "SALAMIES", color: TronColors.green)
+        }
+        .padding(.vertical, 10)
+        .background(TronColors.cardBackground)
+        .cornerRadius(10)
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .stroke(TronColors.cyan.opacity(0.3), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Total Stat Cell
+struct TotalStatCell: View {
+    let value: Int
+    let label: String
+    let color: Color
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text("\(value)")
+                .font(.system(size: 20, weight: .bold, design: .monospaced))
+                .foregroundColor(color)
+                .neonGlow(color: color, radius: 4)
+
+            Text(label)
+                .font(.system(size: 8, weight: .medium, design: .monospaced))
+                .foregroundColor(color.opacity(0.7))
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
