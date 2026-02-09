@@ -170,8 +170,6 @@ struct PlayerAliases {
         "rookie reece": "Rookie Reece",
         "reece": "Rookie Reece",
 
-        "doc cock": "Doc Cock",
-
         "dong quixote": "Dong Quixote",
         "dq": "Dong Quixote",
         "quixote": "Dong Quixote",
