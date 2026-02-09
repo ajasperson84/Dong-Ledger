@@ -30,6 +30,7 @@
 		AA0025 /* PastSeasonsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1023; };
 		AA0026 /* CareerStatsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1024; };
 		AA0027 /* Achievements.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1025; };
+		AA0028 /* AdminService.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1026; };
 		AA0015 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AA1015; };
 		AA0016 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = AA1016; };
 		AA0017 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = AA2001; };
@@ -60,6 +61,7 @@
 		AA1023 /* PastSeasonsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PastSeasonsView.swift; sourceTree = "<group>"; };
 		AA1024 /* CareerStatsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CareerStatsView.swift; sourceTree = "<group>"; };
 		AA1025 /* Achievements.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Achievements.swift; sourceTree = "<group>"; };
+		AA1026 /* AdminService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdminService.swift; sourceTree = "<group>"; };
 		AA1015 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA1016 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		AA3001 /* StickballStats.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StickballStats.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -153,6 +155,7 @@
 			isa = PBXGroup;
 			children = (
 				AA1006 /* StatsService.swift */,
+				AA1026 /* AdminService.swift */,
 			);
 			path = Services;
 			sourceTree = "<group>";
@@ -266,6 +269,7 @@
 				AA0025 /* PastSeasonsView.swift in Sources */,
 				AA0026 /* CareerStatsView.swift in Sources */,
 				AA0027 /* Achievements.swift in Sources */,
+				AA0028 /* AdminService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -9,11 +9,13 @@ import SwiftUI
 
 struct PlayersView: View {
     @EnvironmentObject var statsService: StatsService
+    @EnvironmentObject var adminService: AdminService
     @State private var showingAddPlayer = false
     @State private var selectedPlayer: Player?
     @State private var showingDeleteConfirmation = false
     @State private var playerToDelete: Player?
     @State private var selectedCareerStats: CareerStats?
+    @State private var showingAdminPIN = false
 
     // Get all career stats for lookup
     private let allCareerStats = HistoricalData.calculateCareerStats()
@@ -30,16 +32,18 @@ struct PlayersView: View {
                 TronGridBackground()
 
                 VStack(spacing: 0) {
-                    // Quick add bar
-                    QuickAddPlayerBar(onAdd: { showingAddPlayer = true })
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 12)
+                    // Quick add bar (only show in admin mode)
+                    if adminService.isAdminMode {
+                        QuickAddPlayerBar(onAdd: { showingAddPlayer = true })
+                            .padding(.horizontal, 16)
+                            .padding(.vertical, 12)
+                    }
 
                     if statsService.players.isEmpty {
                         EmptyStateView(
                             icon: "person.3",
                             title: "NO PLAYERS",
-                            message: "Tap + to add your first player"
+                            message: adminService.isAdminMode ? "Tap + to add your first player" : "No players added yet"
                         )
                     } else {
                         // Players list
@@ -49,6 +53,7 @@ struct PlayersView: View {
                                     PlayerManagementRow(
                                         player: player,
                                         careerStats: careerStatsFor(player),
+                                        isAdminMode: adminService.isAdminMode,
                                         onTap: {
                                             if let stats = careerStatsFor(player) {
                                                 selectedCareerStats = stats
@@ -70,6 +75,25 @@ struct PlayersView: View {
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    // Admin toggle button
+                    Button(action: {
+                        if adminService.isAdminMode {
+                            adminService.logout()
+                        } else {
+                            showingAdminPIN = true
+                        }
+                    }) {
+                        HStack(spacing: 4) {
+                            Image(systemName: adminService.isAdminMode ? "lock.open.fill" : "lock.fill")
+                                .font(.system(size: 14))
+                            Text(adminService.isAdminMode ? "ADMIN" : "")
+                                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        }
+                        .foregroundColor(adminService.isAdminMode ? TronColors.green : TronColors.dimText)
+                    }
+                }
+
                 ToolbarItem(placement: .principal) {
                     Text("PLAYERS")
                         .font(.system(size: 16, weight: .bold, design: .monospaced))
@@ -77,11 +101,13 @@ struct PlayersView: View {
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingAddPlayer = true }) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 20))
-                            .foregroundColor(TronColors.green)
-                            .neonGlow(color: TronColors.green, radius: 5)
+                    if adminService.isAdminMode {
+                        Button(action: { showingAddPlayer = true }) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.system(size: 20))
+                                .foregroundColor(TronColors.green)
+                                .neonGlow(color: TronColors.green, radius: 5)
+                        }
                     }
                 }
             }
@@ -92,6 +118,10 @@ struct PlayersView: View {
             .sheet(item: $selectedPlayer) { player in
                 AddEditPlayerView(player: player)
                     .environmentObject(statsService)
+            }
+            .sheet(isPresented: $showingAdminPIN) {
+                AdminPINEntryView()
+                    .environmentObject(adminService)
             }
             .alert("DELETE PLAYER", isPresented: $showingDeleteConfirmation) {
                 Button("Cancel", role: .cancel) {}
@@ -150,6 +180,7 @@ struct QuickAddPlayerBar: View {
 struct PlayerManagementRow: View {
     let player: Player
     let careerStats: CareerStats?
+    let isAdminMode: Bool
     let onTap: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
@@ -198,18 +229,20 @@ struct PlayerManagementRow: View {
             }
             .buttonStyle(.plain)
 
-            // Action buttons
-            HStack(spacing: 12) {
-                Button(action: onEdit) {
-                    Image(systemName: "pencil.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(TronColors.cyan)
-                }
+            // Action buttons (only show in admin mode)
+            if isAdminMode {
+                HStack(spacing: 12) {
+                    Button(action: onEdit) {
+                        Image(systemName: "pencil.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(TronColors.cyan)
+                    }
 
-                Button(action: onDelete) {
-                    Image(systemName: "trash.circle.fill")
-                        .font(.system(size: 24))
-                        .foregroundColor(TronColors.orange)
+                    Button(action: onDelete) {
+                        Image(systemName: "trash.circle.fill")
+                            .font(.system(size: 24))
+                            .foregroundColor(TronColors.orange)
+                    }
                 }
             }
         }
@@ -224,7 +257,165 @@ struct PlayerManagementRow: View {
     }
 }
 
+// MARK: - Admin PIN Entry View
+struct AdminPINEntryView: View {
+    @EnvironmentObject var adminService: AdminService
+    @Environment(\.dismiss) var dismiss
+    @State private var pin = ""
+    @State private var showError = false
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                TronGridBackground()
+
+                VStack(spacing: 24) {
+                    // Lock icon
+                    ZStack {
+                        Circle()
+                            .fill(TronColors.cyan.opacity(0.2))
+                            .frame(width: 80, height: 80)
+
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 32))
+                            .foregroundColor(TronColors.cyan)
+                    }
+                    .neonGlow(color: TronColors.cyan, radius: 10)
+
+                    Text("ENTER ADMIN PIN")
+                        .font(.system(size: 18, weight: .bold, design: .monospaced))
+                        .foregroundColor(TronColors.cyan)
+
+                    // PIN display
+                    HStack(spacing: 12) {
+                        ForEach(0..<4) { index in
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(TronColors.cardBackground)
+                                    .frame(width: 50, height: 60)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 8)
+                                            .stroke(showError ? TronColors.orange : TronColors.cyan.opacity(0.5), lineWidth: 2)
+                                    )
+
+                                if index < pin.count {
+                                    Circle()
+                                        .fill(TronColors.cyan)
+                                        .frame(width: 16, height: 16)
+                                        .neonGlow(color: TronColors.cyan, radius: 5)
+                                }
+                            }
+                        }
+                    }
+
+                    if showError {
+                        Text("INCORRECT PIN")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundColor(TronColors.orange)
+                    }
+
+                    // Number pad
+                    VStack(spacing: 12) {
+                        ForEach(0..<3) { row in
+                            HStack(spacing: 12) {
+                                ForEach(1...3, id: \.self) { col in
+                                    let number = row * 3 + col
+                                    PINButton(number: "\(number)") {
+                                        addDigit("\(number)")
+                                    }
+                                }
+                            }
+                        }
+                        HStack(spacing: 12) {
+                            // Empty space
+                            Color.clear
+                                .frame(width: 70, height: 70)
+
+                            PINButton(number: "0") {
+                                addDigit("0")
+                            }
+
+                            // Delete button
+                            Button(action: deleteDigit) {
+                                ZStack {
+                                    Circle()
+                                        .fill(TronColors.cardBackground)
+                                        .frame(width: 70, height: 70)
+
+                                    Image(systemName: "delete.left")
+                                        .font(.system(size: 24))
+                                        .foregroundColor(TronColors.orange)
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer()
+                }
+                .padding(.top, 40)
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                    .foregroundColor(TronColors.orange)
+                }
+            }
+        }
+        .presentationDetents([.large])
+    }
+
+    private func addDigit(_ digit: String) {
+        guard pin.count < 4 else { return }
+        showError = false
+        pin += digit
+
+        if pin.count == 4 {
+            // Attempt authentication
+            if adminService.authenticate(pin: pin) {
+                dismiss()
+            } else {
+                showError = true
+                pin = ""
+            }
+        }
+    }
+
+    private func deleteDigit() {
+        guard !pin.isEmpty else { return }
+        pin.removeLast()
+        showError = false
+    }
+}
+
+// MARK: - PIN Button
+struct PINButton: View {
+    let number: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            ZStack {
+                Circle()
+                    .fill(TronColors.cardBackground)
+                    .frame(width: 70, height: 70)
+                    .overlay(
+                        Circle()
+                            .stroke(TronColors.cyan.opacity(0.3), lineWidth: 1)
+                    )
+
+                Text(number)
+                    .font(.system(size: 28, weight: .bold, design: .monospaced))
+                    .foregroundColor(TronColors.primaryText)
+            }
+        }
+    }
+}
+
 #Preview {
     PlayersView()
         .environmentObject(StatsService())
+        .environmentObject(AdminService.shared)
 }

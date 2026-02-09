@@ -20,11 +20,13 @@ class AppDelegate: NSObject, UIApplicationDelegate {
 struct DongCountryLedgerApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var statsService = StatsService()
+    @StateObject private var adminService = AdminService.shared
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(statsService)
+                .environmentObject(adminService)
                 .preferredColorScheme(.dark)
         }
     }

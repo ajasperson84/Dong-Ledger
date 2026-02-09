@@ -9,6 +9,7 @@ import SwiftUI
 
 struct WeeklyStatsView: View {
     @EnvironmentObject var statsService: StatsService
+    @EnvironmentObject var adminService: AdminService
     @State private var showingPlayerSelection = false
     @State private var showingBatchEntry = false
     @State private var selectedPlayer: Player?
@@ -91,20 +92,27 @@ struct WeeklyStatsView: View {
                                 .font(.system(size: 12, design: .monospaced))
                                 .foregroundColor(TronColors.dimText)
 
-                            Button(action: { showingPlayerSelection = true }) {
-                                HStack {
-                                    Image(systemName: "plus.circle.fill")
-                                    Text("ADD PLAYERS")
+                            if adminService.isAdminMode {
+                                Button(action: { showingPlayerSelection = true }) {
+                                    HStack {
+                                        Image(systemName: "plus.circle.fill")
+                                        Text("ADD PLAYERS")
+                                    }
+                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
+                                    .foregroundColor(TronColors.darkBackground)
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 14)
+                                    .background(TronColors.green)
+                                    .cornerRadius(10)
+                                    .neonGlow(color: TronColors.green, radius: 8)
                                 }
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                .foregroundColor(TronColors.darkBackground)
-                                .padding(.horizontal, 24)
-                                .padding(.vertical, 14)
-                                .background(TronColors.green)
-                                .cornerRadius(10)
-                                .neonGlow(color: TronColors.green, radius: 8)
+                                .padding(.top, 8)
+                            } else {
+                                Text("Admin mode required to add players")
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .foregroundColor(TronColors.dimText)
+                                    .padding(.top, 8)
                             }
-                            .padding(.top, 8)
 
                             Spacer()
                         }
@@ -139,7 +147,12 @@ struct WeeklyStatsView: View {
                                             WeeklyStatRow(
                                                 player: player,
                                                 stats: stats,
-                                                onTap: { selectedPlayer = player }
+                                                isAdminMode: adminService.isAdminMode,
+                                                onTap: {
+                                                    if adminService.isAdminMode {
+                                                        selectedPlayer = player
+                                                    }
+                                                }
                                             )
                                         }
                                     }
@@ -160,18 +173,20 @@ struct WeeklyStatsView: View {
                 }
 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 12) {
-                        // Add/edit players for week
-                        Button(action: { showingPlayerSelection = true }) {
-                            Image(systemName: "person.badge.plus")
-                                .foregroundColor(TronColors.green)
-                        }
+                    if adminService.isAdminMode {
+                        HStack(spacing: 12) {
+                            // Add/edit players for week
+                            Button(action: { showingPlayerSelection = true }) {
+                                Image(systemName: "person.badge.plus")
+                                    .foregroundColor(TronColors.green)
+                            }
 
-                        // Batch edit stats
-                        if !playersThisWeek.isEmpty {
-                            Button(action: { showingBatchEntry = true }) {
-                                Image(systemName: "square.and.pencil")
-                                    .foregroundColor(TronColors.cyan)
+                            // Batch edit stats
+                            if !playersThisWeek.isEmpty {
+                                Button(action: { showingBatchEntry = true }) {
+                                    Image(systemName: "square.and.pencil")
+                                        .foregroundColor(TronColors.cyan)
+                                }
                             }
                         }
                     }
@@ -206,6 +221,7 @@ struct WeeklyStatsView: View {
 struct WeeklyStatRow: View {
     let player: Player
     let stats: WeeklyStats
+    var isAdminMode: Bool = true
     let onTap: () -> Void
 
     var body: some View {
@@ -229,9 +245,12 @@ struct WeeklyStatRow: View {
 
                 Spacer()
 
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 10))
-                    .foregroundColor(TronColors.dimText)
+                // Only show edit chevron in admin mode
+                if isAdminMode {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10))
+                        .foregroundColor(TronColors.dimText)
+                }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 10)
@@ -243,6 +262,7 @@ struct WeeklyStatRow: View {
             )
         }
         .buttonStyle(.plain)
+        .disabled(!isAdminMode)
     }
 }
 
@@ -640,4 +660,5 @@ struct EmptyStateView: View {
 #Preview {
     WeeklyStatsView()
         .environmentObject(StatsService())
+        .environmentObject(AdminService.shared)
 }
