@@ -102,6 +102,13 @@ struct SeasonDetailView: View {
     let season: HistoricalSeasonStats
     @Environment(\.dismiss) var dismiss
     @State private var selectedCategory: StatCategory = .dongs
+    @State private var showingAwards = false
+
+    // Get season awards
+    var seasonAwards: SeasonAwards {
+        let allAwards = AchievementsCalculator.getAllSeasonAwards()
+        return allAwards.first { $0.seasonNumber == season.seasonNumber } ?? SeasonAwards(seasonNumber: season.seasonNumber, seasonName: season.seasonName)
+    }
 
     enum StatCategory: String, CaseIterable {
         case dongs = "DONGS"
@@ -170,6 +177,26 @@ struct SeasonDetailView: View {
                     }
                     .padding(.vertical, 16)
 
+                    // Season Awards Button
+                    Button(action: { showingAwards = true }) {
+                        HStack {
+                            Image(systemName: "trophy.fill")
+                                .foregroundColor(TronColors.yellow)
+                            Text("SEASON AWARDS")
+                                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                                .foregroundColor(TronColors.yellow)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(TronColors.yellow.opacity(0.1))
+                        .cornerRadius(8)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(TronColors.yellow.opacity(0.5), lineWidth: 1)
+                        )
+                    }
+                    .padding(.bottom, 12)
+
                     // Category picker
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
@@ -225,7 +252,145 @@ struct SeasonDetailView: View {
                     .foregroundColor(TronColors.orange)
                 }
             }
+            .sheet(isPresented: $showingAwards) {
+                SeasonAwardsView(awards: seasonAwards)
+            }
         }
+    }
+}
+
+// MARK: - Season Awards View
+struct SeasonAwardsView: View {
+    let awards: SeasonAwards
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        NavigationStack {
+            ZStack {
+                TronGridBackground()
+
+                ScrollView {
+                    VStack(spacing: 24) {
+                        // Header
+                        VStack(spacing: 4) {
+                            Text("SEASON \(awards.seasonNumber)")
+                                .font(.system(size: 14, weight: .medium, design: .monospaced))
+                                .foregroundColor(TronColors.secondaryText)
+
+                            Text("AWARDS")
+                                .font(.system(size: 28, weight: .bold, design: .monospaced))
+                                .foregroundColor(TronColors.yellow)
+                                .neonGlow(color: TronColors.yellow, radius: 10)
+                        }
+                        .padding(.top, 20)
+
+                        // Dong King
+                        if let dongKing = awards.dongKing {
+                            AwardCard(
+                                title: "DONG KING",
+                                icon: "crown.fill",
+                                color: TronColors.cyan,
+                                playerName: dongKing,
+                                stat: "\(awards.dongKingTotal) DONGS"
+                            )
+                        }
+
+                        // MVP
+                        if let mvp = awards.mvp {
+                            AwardCard(
+                                title: "MVP",
+                                icon: "star.fill",
+                                color: TronColors.yellow,
+                                playerName: mvp,
+                                stat: "\(awards.mvpDongs) DONGS + \(awards.mvpWins) WINS"
+                            )
+                        }
+
+                        // Best New Baby (Rookie of the Year)
+                        if let rookie = awards.bestNewBaby {
+                            AwardCard(
+                                title: "BEST NEW BABY",
+                                icon: "figure.child",
+                                color: TronColors.green,
+                                playerName: rookie,
+                                stat: "\(awards.bestNewBabyDongs) DONGS"
+                            )
+                        }
+
+                        if awards.dongKing == nil && awards.mvp == nil && awards.bestNewBaby == nil {
+                            Text("NO AWARDS DATA")
+                                .font(.system(size: 14, weight: .medium, design: .monospaced))
+                                .foregroundColor(TronColors.dimText)
+                                .padding(.top, 40)
+                        }
+                    }
+                    .padding(.horizontal, 16)
+                    .padding(.bottom, 40)
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                    .foregroundColor(TronColors.orange)
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
+    }
+}
+
+// MARK: - Award Card
+struct AwardCard: View {
+    let title: String
+    let icon: String
+    let color: Color
+    let playerName: String
+    let stat: String
+
+    var body: some View {
+        VStack(spacing: 12) {
+            // Award icon
+            ZStack {
+                Circle()
+                    .fill(color.opacity(0.2))
+                    .frame(width: 70, height: 70)
+
+                Circle()
+                    .stroke(color, lineWidth: 3)
+                    .frame(width: 70, height: 70)
+
+                Image(systemName: icon)
+                    .font(.system(size: 28))
+                    .foregroundColor(color)
+            }
+            .neonGlow(color: color, radius: 10)
+
+            // Award title
+            Text(title)
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundColor(color)
+
+            // Player name
+            Text(playerName.uppercased())
+                .font(.system(size: 20, weight: .bold, design: .monospaced))
+                .foregroundColor(TronColors.primaryText)
+
+            // Stat
+            Text(stat)
+                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .foregroundColor(TronColors.secondaryText)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 20)
+        .background(TronColors.cardBackground)
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(color.opacity(0.3), lineWidth: 1)
+        )
     }
 }
 

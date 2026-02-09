@@ -30,6 +30,33 @@ struct WeeklyStatsView: View {
         return (totalDongs, totalDrops, totalDPs, totalSalamies)
     }
 
+    // Player of the Week calculation
+    var playerOfTheWeek: (player: Player, score: Double, dongs: Int, doublePlays: Int, wins: Int, drops: Int)? {
+        let weekStats = statsService.getWeeklyStatsForWeek(statsService.currentWeek)
+        guard !weekStats.isEmpty else { return nil }
+
+        var bestPlayer: Player?
+        var bestScore: Double = -Double.infinity
+        var bestStats: WeeklyStats?
+
+        for stats in weekStats {
+            let score = AchievementsCalculator.calculateWeeklyScore(
+                dongs: stats.dongs,
+                doublePlays: stats.doublePlays,
+                wins: stats.wins,
+                drops: stats.drops
+            )
+            if score > bestScore {
+                bestScore = score
+                bestStats = stats
+                bestPlayer = statsService.players.first { $0.id == stats.playerId }
+            }
+        }
+
+        guard let player = bestPlayer, let stats = bestStats, bestScore > 0 else { return nil }
+        return (player, bestScore, stats.dongs, stats.doublePlays, stats.wins, stats.drops)
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -93,6 +120,18 @@ struct WeeklyStatsView: View {
                                     salamies: weeklyTotals.salamies
                                 )
                                 .padding(.horizontal, 12)
+
+                                // Player of the Week
+                                if let potw = playerOfTheWeek {
+                                    PlayerOfTheWeekCard(
+                                        playerName: potw.player.name,
+                                        dongs: potw.dongs,
+                                        doublePlays: potw.doublePlays,
+                                        wins: potw.wins,
+                                        drops: potw.drops
+                                    )
+                                    .padding(.horizontal, 12)
+                                }
 
                                 LazyVStack(spacing: 6) {
                                     ForEach(playersThisWeek) { player in
@@ -447,6 +486,74 @@ struct FieldOptionRow: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Player of the Week Card
+struct PlayerOfTheWeekCard: View {
+    let playerName: String
+    let dongs: Int
+    let doublePlays: Int
+    let wins: Int
+    let drops: Int
+
+    var body: some View {
+        VStack(spacing: 8) {
+            // Header
+            HStack {
+                Image(systemName: "star.fill")
+                    .foregroundColor(TronColors.yellow)
+                Text("PLAYER OF THE WEEK")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .foregroundColor(TronColors.yellow)
+                Image(systemName: "star.fill")
+                    .foregroundColor(TronColors.yellow)
+            }
+
+            // Player name
+            Text(playerName.uppercased())
+                .font(.system(size: 18, weight: .bold, design: .monospaced))
+                .foregroundColor(TronColors.primaryText)
+                .neonGlow(color: TronColors.yellow, radius: 5)
+
+            // Stats breakdown
+            HStack(spacing: 16) {
+                MiniStatBadge(value: dongs, label: "D", color: TronColors.cyan)
+                MiniStatBadge(value: doublePlays, label: "DP", color: TronColors.magenta)
+                MiniStatBadge(value: wins, label: "W", color: TronColors.yellow)
+                MiniStatBadge(value: drops, label: "DR", color: TronColors.orange, negative: true)
+            }
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 16)
+        .frame(maxWidth: .infinity)
+        .background(TronColors.yellow.opacity(0.1))
+        .cornerRadius(12)
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(TronColors.yellow.opacity(0.5), lineWidth: 2)
+        )
+        .neonGlow(color: TronColors.yellow, radius: 5)
+    }
+}
+
+// MARK: - Mini Stat Badge (for POTW)
+struct MiniStatBadge: View {
+    let value: Int
+    let label: String
+    let color: Color
+    var negative: Bool = false
+
+    var body: some View {
+        VStack(spacing: 2) {
+            Text("\(value)")
+                .font(.system(size: 16, weight: .bold, design: .monospaced))
+                .foregroundColor(negative && value > 0 ? color : (value > 0 ? color : TronColors.dimText))
+
+            Text(label)
+                .font(.system(size: 8, weight: .medium, design: .monospaced))
+                .foregroundColor(color.opacity(0.7))
+        }
     }
 }
 

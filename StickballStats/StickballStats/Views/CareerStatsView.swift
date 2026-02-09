@@ -214,6 +214,12 @@ struct PlayerCareerDetailView: View {
     let stats: CareerStats
     @Environment(\.dismiss) var dismiss
 
+    // Get achievements for this player
+    var playerAchievements: PlayerAchievements {
+        let allAchievements = AchievementsCalculator.getAllPlayerAchievements()
+        return allAchievements.first { $0.playerName == stats.playerName } ?? PlayerAchievements(playerName: stats.playerName)
+    }
+
     var body: some View {
         NavigationStack {
             ZStack {
@@ -231,6 +237,26 @@ struct PlayerCareerDetailView: View {
                         Text("\(stats.seasonsPlayed) SEASONS PLAYED")
                             .font(.system(size: 12, weight: .medium, design: .monospaced))
                             .foregroundColor(TronColors.secondaryText)
+
+                        // Achievement badges
+                        if !playerAchievements.badges.isEmpty {
+                            VStack(spacing: 8) {
+                                Text("ACHIEVEMENTS")
+                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                    .foregroundColor(TronColors.secondaryText)
+
+                                LazyVGrid(columns: [
+                                    GridItem(.flexible()),
+                                    GridItem(.flexible()),
+                                    GridItem(.flexible())
+                                ], spacing: 12) {
+                                    ForEach(playerAchievements.badges) { badge in
+                                        AchievementBadgeView(badge: badge)
+                                    }
+                                }
+                            }
+                            .padding(.horizontal, 16)
+                        }
 
                         // Stats grid
                         VStack(spacing: 12) {
@@ -256,6 +282,37 @@ struct PlayerCareerDetailView: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Achievement Badge View
+struct AchievementBadgeView: View {
+    let badge: AchievementBadge
+
+    var body: some View {
+        VStack(spacing: 4) {
+            ZStack {
+                Circle()
+                    .fill(badge.color.opacity(0.2))
+                    .frame(width: 50, height: 50)
+
+                Circle()
+                    .stroke(badge.color, lineWidth: 2)
+                    .frame(width: 50, height: 50)
+
+                Image(systemName: badge.icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(badge.color)
+            }
+            .neonGlow(color: badge.color, radius: 5)
+
+            Text(badge.rawValue.uppercased())
+                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                .foregroundColor(badge.color)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+        }
+        .frame(maxWidth: .infinity)
     }
 }
 
