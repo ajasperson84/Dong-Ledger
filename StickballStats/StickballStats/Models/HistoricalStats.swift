@@ -140,8 +140,8 @@ struct PlayerAliases {
         "jeffrey bomber": "Jeffrey Bomber",
         "bomber": "Jeffrey Bomber",
 
-        "rookie dave": "Rookie Dave",
-        "dave": "Rookie Dave",
+        "rookie dave": "White Noize",
+        "dave": "White Noize",
 
         "big whoop": "Big Whoop",
         "whoop": "Big Whoop",
@@ -217,11 +217,11 @@ struct PlayerAliases {
 
         "big sexy": "Big Sexy",
 
-        "rookie ahmet": "Rookie Ahmet",
-        "ahmet": "Rookie Ahmet",
+        "rookie ahmet": "Two Step",
+        "ahmet": "Two Step",
 
-        "rookie ben": "Rookie Ben",
-        "ben": "Rookie Ben",
+        "rookie ben": "Lunch Money",
+        "ben": "Lunch Money",
 
         "spider": "Spider",
 
@@ -235,8 +235,8 @@ struct PlayerAliases {
         "daisy cutter": "Daisy Cutter",
         "daisy": "Daisy Cutter",
 
-        "rookie johnny": "Rookie Johnny",
-        "johnny": "Rookie Johnny",
+        "rookie johnny": "TV Dad",
+        "johnny": "TV Dad",
 
         "rookie corn": "Rookie Corn",
         "corn": "Rookie Corn",
@@ -259,8 +259,8 @@ struct PlayerAliases {
         "rookie jackson": "Rookie Jackson",
         "jackson": "Rookie Jackson",
 
-        "rookie adam": "Rookie Adam",
-        "adam": "Rookie Adam",
+        "rookie adam": "Dr. Big Dick",
+        "adam": "Dr. Big Dick",
 
         "brunch": "Brunch",
 
@@ -294,8 +294,8 @@ struct PlayerAliases {
 
         "brother big dick": "Brother Big Dick",
 
-        "rookie drew": "Rookie Drew",
-        "drew": "Rookie Drew",
+        "rookie drew": "Cuidado",
+        "drew": "Cuidado",
 
         "rookie graham": "American Dream",
         "graham": "American Dream",
