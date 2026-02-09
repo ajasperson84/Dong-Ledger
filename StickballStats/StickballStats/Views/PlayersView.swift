@@ -13,6 +13,16 @@ struct PlayersView: View {
     @State private var selectedPlayer: Player?
     @State private var showingDeleteConfirmation = false
     @State private var playerToDelete: Player?
+    @State private var selectedCareerStats: CareerStats?
+
+    // Get all career stats for lookup
+    private let allCareerStats = HistoricalData.calculateCareerStats()
+
+    // Find career stats for a player by name
+    private func careerStatsFor(_ player: Player) -> CareerStats? {
+        let canonicalName = PlayerAliases.canonicalName(for: player.name)
+        return allCareerStats.first { $0.playerName == canonicalName }
+    }
 
     var body: some View {
         NavigationStack {
@@ -38,6 +48,12 @@ struct PlayersView: View {
                                 ForEach(statsService.players) { player in
                                     PlayerManagementRow(
                                         player: player,
+                                        careerStats: careerStatsFor(player),
+                                        onTap: {
+                                            if let stats = careerStatsFor(player) {
+                                                selectedCareerStats = stats
+                                            }
+                                        },
                                         onEdit: { selectedPlayer = player },
                                         onDelete: {
                                             playerToDelete = player
@@ -87,6 +103,9 @@ struct PlayersView: View {
             } message: {
                 Text("Are you sure you want to remove \(playerToDelete?.name ?? "this player")? Their stats will be preserved but they won't appear in active lists.")
             }
+            .sheet(item: $selectedCareerStats) { stats in
+                PlayerCareerDetailView(stats: stats)
+            }
         }
     }
 
@@ -130,32 +149,54 @@ struct QuickAddPlayerBar: View {
 // MARK: - Player Management Row
 struct PlayerManagementRow: View {
     let player: Player
+    let careerStats: CareerStats?
+    let onTap: () -> Void
     let onEdit: () -> Void
     let onDelete: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
-            // Avatar placeholder
-            ZStack {
-                Circle()
-                    .fill(TronColors.surfaceBackground)
-                    .frame(width: 44, height: 44)
+            // Tappable player info area
+            Button(action: onTap) {
+                HStack(spacing: 12) {
+                    // Avatar placeholder
+                    ZStack {
+                        Circle()
+                            .fill(TronColors.surfaceBackground)
+                            .frame(width: 44, height: 44)
 
-                Circle()
-                    .stroke(TronColors.cyan.opacity(0.5), lineWidth: 1)
-                    .frame(width: 44, height: 44)
+                        Circle()
+                            .stroke(TronColors.cyan.opacity(0.5), lineWidth: 1)
+                            .frame(width: 44, height: 44)
 
-                Text(String(player.name.prefix(1)).uppercased())
-                    .font(.system(size: 18, weight: .bold, design: .monospaced))
-                    .foregroundColor(TronColors.cyan)
+                        Text(String(player.name.prefix(1)).uppercased())
+                            .font(.system(size: 18, weight: .bold, design: .monospaced))
+                            .foregroundColor(TronColors.cyan)
+                    }
+
+                    // Player info
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(player.name.uppercased())
+                            .font(.system(size: 14, weight: .bold, design: .monospaced))
+                            .foregroundColor(TronColors.primaryText)
+
+                        if let stats = careerStats {
+                            Text("\(stats.totalDongs) CAREER DONGS • \(stats.seasonsPlayed) SEASONS")
+                                .font(.system(size: 9, design: .monospaced))
+                                .foregroundColor(TronColors.dimText)
+                        }
+                    }
+
+                    Spacer()
+
+                    if careerStats != nil {
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 10))
+                            .foregroundColor(TronColors.dimText)
+                    }
+                }
             }
-
-            // Player info
-            Text(player.name.uppercased())
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                .foregroundColor(TronColors.primaryText)
-
-            Spacer()
+            .buttonStyle(.plain)
 
             // Action buttons
             HStack(spacing: 12) {

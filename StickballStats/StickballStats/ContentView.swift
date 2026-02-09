@@ -46,21 +46,15 @@ struct ContentView: View {
 
                 PastSeasonsView()
                     .tabItem {
-                        Label("HISTORY", systemImage: "clock.arrow.circlepath")
+                        Label("HISTORIC", systemImage: "book.fill")
                     }
                     .tag(2)
-
-                CareerStatsView()
-                    .tabItem {
-                        Label("CAREERS", systemImage: "star.fill")
-                    }
-                    .tag(3)
 
                 PlayersView()
                     .tabItem {
                         Label("PLAYERS", systemImage: "person.3")
                     }
-                    .tag(4)
+                    .tag(3)
             }
             .tint(TronColors.cyan)
         }
