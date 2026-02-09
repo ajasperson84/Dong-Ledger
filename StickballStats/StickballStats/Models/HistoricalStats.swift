@@ -54,6 +54,7 @@ struct PlayerAliases {
 
         "slacker": "Slacker",
         "slack": "Slacker",
+        "rookie jeff": "Slacker",
 
         "goat cheese": "Goat Cheese",
         "goat": "Goat Cheese",
@@ -130,8 +131,11 @@ struct PlayerAliases {
         "dr big dick": "Dr. Big Dick",
         "big dick md": "Dr. Big Dick",
         "dr shwantz": "Dr. Big Dick",
-        "laser": "Dr. Big Dick",
-        "fart dolphin": "Dr. Big Dick",
+        "dr schwantz": "Dr. Big Dick",
+        "doc cock": "Dr. Big Dick",
+
+        "fart dolphin": "Fart Cop",
+        "fart cop": "Fart Cop",
 
         "jeffrey bomber": "Jeffrey Bomber",
         "bomber": "Jeffrey Bomber",
@@ -152,6 +156,7 @@ struct PlayerAliases {
         "two step": "Two Step",
         "2 step": "Two Step",
         "2-step": "Two Step",
+        "laser": "Two Step",
 
         "rookie gus": "Rookie Gus",
         "gus": "Rookie Gus",
@@ -525,7 +530,6 @@ struct HistoricalData {
                 HistoricalPlayerSeasonStats(playerName: "Surgeon", dongs: 8, drops: 0, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "Two Step", dongs: 6, drops: 0, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "Dong Quixote", dongs: 4, drops: 0, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Rookie Greg", dongs: 4, drops: 0, doublePlays: 0, salamies: 1, wins: 0, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "Big Whoop", dongs: 3, drops: 0, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "Rookie Kyle", dongs: 2, drops: 0, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "Big Trip", dongs: 2, drops: 0, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
