@@ -297,14 +297,14 @@ struct PlayerAliases {
         "rookie drew": "Rookie Drew",
         "drew": "Rookie Drew",
 
-        "rookie graham": "Rookie Graham",
-        "graham": "Rookie Graham",
+        "rookie graham": "American Dream",
+        "graham": "American Dream",
 
-        "rookie andrew": "Rookie Andrew",
-        "andrew": "Rookie Andrew",
+        "rookie andrew": "Party Platter",
+        "andrew": "Party Platter",
 
-        "rookie mensch": "Rookie Mensch",
-        "mensch": "Rookie Mensch",
+        "rookie mensch": "Hot Tub",
+        "mensch": "Hot Tub",
 
         "rookie dan": "Rookie Dan",
         "dan": "Rookie Dan",
@@ -313,11 +313,11 @@ struct PlayerAliases {
 
         "backdoor": "Backdoor",
 
-        "rookie eric": "Rookie Eric",
-        "eric": "Rookie Eric",
+        "rookie eric": "Cojones",
+        "eric": "Cojones",
 
-        "rookie bill": "Rookie Bill",
-        "bill": "Rookie Bill",
+        "rookie bill": "Candyman",
+        "bill": "Candyman",
 
         "eli": "Eli",
 
@@ -332,8 +332,9 @@ struct PlayerAliases {
 
         "cuijano": "Cuijano",
 
-        "rosé canseco": "Rosé Canseco",
-        "canseco": "Rosé Canseco",
+        "rosé canseco": "Starf",
+        "canseco": "Starf",
+        "rose canseco": "Starf",
 
         "web": "Web",
 
