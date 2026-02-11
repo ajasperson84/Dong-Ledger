@@ -249,6 +249,12 @@ struct PlayerCareerDetailView: View {
                             CareerStatCard(title: "DOUBLE PLAYS", value: stats.totalDoublePlays, color: TronColors.magenta)
                             CareerStatCard(title: "SALAMIES", value: stats.totalSalamies, color: TronColors.green)
                             CareerStatCard(title: "DONG ROBBERIES", value: stats.totalDongRobs, color: Color.purple)
+
+                            // YFSLA Championships
+                            let champCount = YFSLAChampions.champCount(for: stats.playerName)
+                            if champCount > 0 {
+                                CareerStatCard(title: "YFSLA CHAMPIONSHIPS", value: champCount, color: TronColors.yellow)
+                            }
                         }
                         .padding(.horizontal, 16)
                     }

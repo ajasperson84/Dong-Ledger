@@ -137,16 +137,6 @@ struct PlayerAchievements: Identifiable {
             ))
         }
 
-        // YFSLA Champ
-        if yfslaChampCount > 0 {
-            result.append(BadgeInfo(
-                name: "YFSLA Champ",
-                icon: "trophy.fill",
-                color: TronColors.yellow,
-                multiplier: yfslaChampCount
-            ))
-        }
-
         // MVP
         if mvpCount > 0 {
             result.append(BadgeInfo(
@@ -192,7 +182,7 @@ struct PlayerAchievements: Identifiable {
     var hasBadges: Bool {
         return salamiTier != .none || centuryTier != .none ||
                mvpCount > 0 || dongKingCount > 0 || rookieOfYearCount > 0 ||
-               yfslaChampCount > 0 || hasCoattails
+               hasCoattails
     }
 }
 
