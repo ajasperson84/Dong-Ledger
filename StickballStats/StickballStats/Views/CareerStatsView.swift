@@ -16,22 +16,16 @@ struct CareerStatsView: View {
 
     enum StatCategory: String, CaseIterable {
         case dongs = "DONGS"
-        case drops = "DROPS"
         case doublePlays = "DPs"
         case salamies = "SALAMIS"
-        case wins = "WINS"
         case dongRobs = "ROBS"
-        case seasons = "SEASONS"
 
         var color: Color {
             switch self {
             case .dongs: return TronColors.cyan
-            case .drops: return TronColors.orange
             case .doublePlays: return TronColors.magenta
             case .salamies: return TronColors.green
-            case .wins: return TronColors.yellow
             case .dongRobs: return Color.purple
-            case .seasons: return TronColors.cyan
             }
         }
     }
@@ -40,30 +34,21 @@ struct CareerStatsView: View {
         switch selectedCategory {
         case .dongs:
             return careerStats.filter { $0.totalDongs > 0 }.sorted { $0.totalDongs > $1.totalDongs }
-        case .drops:
-            return careerStats.filter { $0.totalDrops > 0 }.sorted { $0.totalDrops > $1.totalDrops }
         case .doublePlays:
             return careerStats.filter { $0.totalDoublePlays > 0 }.sorted { $0.totalDoublePlays > $1.totalDoublePlays }
         case .salamies:
             return careerStats.filter { $0.totalSalamies > 0 }.sorted { $0.totalSalamies > $1.totalSalamies }
-        case .wins:
-            return careerStats.filter { $0.totalWins > 0 }.sorted { $0.totalWins > $1.totalWins }
         case .dongRobs:
             return careerStats.filter { $0.totalDongRobs > 0 }.sorted { $0.totalDongRobs > $1.totalDongRobs }
-        case .seasons:
-            return careerStats.sorted { $0.seasonsPlayed > $1.seasonsPlayed }
         }
     }
 
     func valueFor(_ stat: CareerStats) -> Int {
         switch selectedCategory {
         case .dongs: return stat.totalDongs
-        case .drops: return stat.totalDrops
         case .doublePlays: return stat.totalDoublePlays
         case .salamies: return stat.totalSalamies
-        case .wins: return stat.totalWins
         case .dongRobs: return stat.totalDongRobs
-        case .seasons: return stat.seasonsPlayed
         }
     }
 
@@ -239,7 +224,7 @@ struct PlayerCareerDetailView: View {
                             .foregroundColor(TronColors.secondaryText)
 
                         // Achievement badges
-                        if !playerAchievements.badges.isEmpty {
+                        if playerAchievements.hasBadges {
                             VStack(spacing: 8) {
                                 Text("ACHIEVEMENTS")
                                     .font(.system(size: 11, weight: .bold, design: .monospaced))
@@ -251,20 +236,18 @@ struct PlayerCareerDetailView: View {
                                     GridItem(.flexible())
                                 ], spacing: 12) {
                                     ForEach(playerAchievements.badges) { badge in
-                                        AchievementBadgeView(badge: badge)
+                                        BadgeDisplayView(badge: badge)
                                     }
                                 }
                             }
                             .padding(.horizontal, 16)
                         }
 
-                        // Stats grid
+                        // Stats grid - only dongs, double plays, salamies, dong robberies
                         VStack(spacing: 12) {
                             CareerStatCard(title: "DONGS", value: stats.totalDongs, color: TronColors.cyan)
-                            CareerStatCard(title: "DROPS", value: stats.totalDrops, color: TronColors.orange)
                             CareerStatCard(title: "DOUBLE PLAYS", value: stats.totalDoublePlays, color: TronColors.magenta)
                             CareerStatCard(title: "SALAMIES", value: stats.totalSalamies, color: TronColors.green)
-                            CareerStatCard(title: "WINS", value: stats.totalWins, color: TronColors.yellow)
                             CareerStatCard(title: "DONG ROBBERIES", value: stats.totalDongRobs, color: Color.purple)
                         }
                         .padding(.horizontal, 16)
@@ -285,9 +268,9 @@ struct PlayerCareerDetailView: View {
     }
 }
 
-// MARK: - Achievement Badge View
-struct AchievementBadgeView: View {
-    let badge: AchievementBadge
+// MARK: - Badge Display View (for BadgeInfo)
+struct BadgeDisplayView: View {
+    let badge: BadgeInfo
 
     var body: some View {
         VStack(spacing: 4) {
@@ -303,10 +286,22 @@ struct AchievementBadgeView: View {
                 Image(systemName: badge.icon)
                     .font(.system(size: 20))
                     .foregroundColor(badge.color)
+
+                // Multiplier badge
+                if badge.multiplier > 1 {
+                    Text("\(badge.multiplier)X")
+                        .font(.system(size: 8, weight: .black, design: .monospaced))
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 2)
+                        .background(badge.color)
+                        .cornerRadius(4)
+                        .offset(x: 18, y: -18)
+                }
             }
             .neonGlow(color: badge.color, radius: 5)
 
-            Text(badge.rawValue.uppercased())
+            Text(badge.name.uppercased())
                 .font(.system(size: 8, weight: .bold, design: .monospaced))
                 .foregroundColor(badge.color)
                 .multilineTextAlignment(.center)

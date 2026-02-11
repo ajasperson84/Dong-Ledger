@@ -8,48 +8,94 @@
 import Foundation
 import SwiftUI
 
-// MARK: - Achievement Badge Types
-enum AchievementBadge: String, CaseIterable, Identifiable {
-    case firstSalami = "First Salami"
-    case centuryClub100 = "Century Club"
-    case centuryClub200 = "Double Century"
-    case centuryClub300 = "Triple Century"
-    case centuryClub400 = "Quad Century"
-    case centuryClub500 = "500 Club"
+// MARK: - Badge Display Info
+struct BadgeInfo: Identifiable {
+    var id: String { name }
+    let name: String
+    let icon: String
+    let color: Color
+    var multiplier: Int = 0 // For awards won multiple times (2X, 3X, etc.)
+}
 
-    var id: String { rawValue }
-
-    var icon: String {
-        switch self {
-        case .firstSalami: return "star.fill"
-        case .centuryClub100: return "100.circle.fill"
-        case .centuryClub200: return "trophy.fill"
-        case .centuryClub300: return "crown.fill"
-        case .centuryClub400: return "flame.fill"
-        case .centuryClub500: return "bolt.fill"
-        }
-    }
+// MARK: - Salami Club Tier
+enum SalamiTier {
+    case none
+    case base      // 1+ salamies
+    case bronze    // 10+ salamies
+    case silver    // 20+ salamies
+    case gold      // 30+ salamies
+    case platinum  // 40+ salamies
 
     var color: Color {
         switch self {
-        case .firstSalami: return TronColors.green
-        case .centuryClub100: return TronColors.cyan
-        case .centuryClub200: return TronColors.yellow
-        case .centuryClub300: return TronColors.orange
-        case .centuryClub400: return TronColors.magenta
-        case .centuryClub500: return Color.purple
+        case .none: return .clear
+        case .base: return TronColors.green
+        case .bronze: return Color(red: 0.8, green: 0.5, blue: 0.2)
+        case .silver: return Color(red: 0.75, green: 0.75, blue: 0.8)
+        case .gold: return Color(red: 1.0, green: 0.84, blue: 0.0)
+        case .platinum: return Color(red: 0.9, green: 0.9, blue: 0.95)
         }
     }
 
-    var description: String {
+    var name: String {
         switch self {
-        case .firstSalami: return "Hit your first career salami"
-        case .centuryClub100: return "100 career dongs"
-        case .centuryClub200: return "200 career dongs"
-        case .centuryClub300: return "300 career dongs"
-        case .centuryClub400: return "400 career dongs"
-        case .centuryClub500: return "500 career dongs"
+        case .none: return ""
+        case .base: return "Salami Club"
+        case .bronze: return "Salami Club"
+        case .silver: return "Salami Club"
+        case .gold: return "Salami Club"
+        case .platinum: return "Salami Club"
         }
+    }
+
+    static func tier(for salamies: Int) -> SalamiTier {
+        if salamies >= 40 { return .platinum }
+        if salamies >= 30 { return .gold }
+        if salamies >= 20 { return .silver }
+        if salamies >= 10 { return .bronze }
+        if salamies >= 1 { return .base }
+        return .none
+    }
+}
+
+// MARK: - Century Club Tier
+enum CenturyTier {
+    case none
+    case base100   // 100+ dongs - cyan/teal
+    case bronze200 // 200+ dongs
+    case silver300 // 300+ dongs
+    case gold400   // 400+ dongs
+    case platinum500 // 500+ dongs
+
+    var color: Color {
+        switch self {
+        case .none: return .clear
+        case .base100: return TronColors.cyan
+        case .bronze200: return Color(red: 0.8, green: 0.5, blue: 0.2)
+        case .silver300: return Color(red: 0.75, green: 0.75, blue: 0.8)
+        case .gold400: return Color(red: 1.0, green: 0.84, blue: 0.0)
+        case .platinum500: return Color(red: 0.9, green: 0.9, blue: 0.95)
+        }
+    }
+
+    var name: String {
+        switch self {
+        case .none: return ""
+        case .base100: return "Century Club"
+        case .bronze200: return "200 Club"
+        case .silver300: return "300 Club"
+        case .gold400: return "400 Club"
+        case .platinum500: return "500 Club"
+        }
+    }
+
+    static func tier(for dongs: Int) -> CenturyTier {
+        if dongs >= 500 { return .platinum500 }
+        if dongs >= 400 { return .gold400 }
+        if dongs >= 300 { return .silver300 }
+        if dongs >= 200 { return .bronze200 }
+        if dongs >= 100 { return .base100 }
+        return .none
     }
 }
 
@@ -57,7 +103,97 @@ enum AchievementBadge: String, CaseIterable, Identifiable {
 struct PlayerAchievements: Identifiable {
     var id: String { playerName }
     let playerName: String
-    var badges: [AchievementBadge] = []
+
+    // Tiered badges
+    var salamiTier: SalamiTier = .none
+    var centuryTier: CenturyTier = .none
+
+    // Award badges with counts
+    var mvpCount: Int = 0
+    var dongKingCount: Int = 0
+    var rookieOfYearCount: Int = 0
+    var yfslaChampCount: Int = 0
+    var hasCoattails: Bool = false
+
+    // Get all badges as displayable info
+    var badges: [BadgeInfo] {
+        var result: [BadgeInfo] = []
+
+        // Salami Club
+        if salamiTier != .none {
+            result.append(BadgeInfo(
+                name: salamiTier.name,
+                icon: "leaf.fill", // Closest to salami/sausage shape
+                color: salamiTier.color
+            ))
+        }
+
+        // Century Club
+        if centuryTier != .none {
+            result.append(BadgeInfo(
+                name: centuryTier.name,
+                icon: "tennisball.fill",
+                color: centuryTier.color
+            ))
+        }
+
+        // YFSLA Champ
+        if yfslaChampCount > 0 {
+            result.append(BadgeInfo(
+                name: "YFSLA Champ",
+                icon: "trophy.fill",
+                color: TronColors.yellow,
+                multiplier: yfslaChampCount
+            ))
+        }
+
+        // MVP
+        if mvpCount > 0 {
+            result.append(BadgeInfo(
+                name: "MVP",
+                icon: "star.fill",
+                color: TronColors.yellow,
+                multiplier: mvpCount
+            ))
+        }
+
+        // Dong King
+        if dongKingCount > 0 {
+            result.append(BadgeInfo(
+                name: "Dong King",
+                icon: "crown.fill",
+                color: TronColors.cyan,
+                multiplier: dongKingCount
+            ))
+        }
+
+        // Rookie of the Year
+        if rookieOfYearCount > 0 {
+            result.append(BadgeInfo(
+                name: "Rookie of the Year",
+                icon: "figure.child",
+                color: TronColors.green,
+                multiplier: rookieOfYearCount
+            ))
+        }
+
+        // Coattails
+        if hasCoattails {
+            result.append(BadgeInfo(
+                name: "Coattails",
+                icon: "tshirt.fill",
+                color: TronColors.magenta
+            ))
+        }
+
+        return result
+    }
+
+    var hasBadges: Bool {
+        return salamiTier != .none || centuryTier != .none ||
+               mvpCount > 0 || dongKingCount > 0 || rookieOfYearCount > 0 ||
+               yfslaChampCount > 0 || hasCoattails
+    }
 }
 
 // MARK: - Player of the Week
@@ -88,9 +224,47 @@ struct SeasonAwards: Identifiable {
     var mvpDongs: Int = 0
     var mvpWins: Int = 0
 
-    // Best New Baby - best rookie (first season player with best performance)
-    var bestNewBaby: String?
-    var bestNewBabyDongs: Int = 0
+    // Rookie of the Year (formerly Best New Baby)
+    var rookieOfYear: String?
+    var rookieOfYearDongs: Int = 0
+}
+
+// MARK: - YFSLA Champions Data
+struct YFSLAChampions {
+    // Players with YFSLA Championship wins (number in parentheses)
+    static let champions: [String: Int] = [
+        "Dong Robber": 2,
+        "Party Platter": 1,
+        "Dong Quixote": 3,
+        "Flash Dance": 1,
+        "Lunch Money": 2,
+        "Baby Boi": 3,
+        "The Deal": 4,
+        "Cuidado": 2,
+        "Candyman": 3,
+        "Katfish": 2,
+        "Cojones": 1,
+        "Hot Tub": 3
+    ]
+
+    static func champCount(for playerName: String) -> Int {
+        return champions[playerName] ?? 0
+    }
+}
+
+// MARK: - Coattails Players
+struct CoattailsPlayers {
+    static let players: Set<String> = [
+        "Party Platter",
+        "Dong Robber",
+        "Baby Boi",
+        "Cuidado",
+        "The Deal"
+    ]
+
+    static func hasCoattails(_ playerName: String) -> Bool {
+        return players.contains(playerName)
+    }
 }
 
 // MARK: - Achievements Calculator
@@ -100,22 +274,30 @@ struct AchievementsCalculator {
     static func calculateAchievements(for playerName: String, careerStats: CareerStats) -> PlayerAchievements {
         var achievements = PlayerAchievements(playerName: playerName)
 
-        // First Salami
-        if careerStats.totalSalamies >= 1 {
-            achievements.badges.append(.firstSalami)
-        }
+        // Salami Club tier
+        achievements.salamiTier = SalamiTier.tier(for: careerStats.totalSalamies)
 
-        // Century Club badges - only show the highest milestone achieved
-        if careerStats.totalDongs >= 500 {
-            achievements.badges.append(.centuryClub500)
-        } else if careerStats.totalDongs >= 400 {
-            achievements.badges.append(.centuryClub400)
-        } else if careerStats.totalDongs >= 300 {
-            achievements.badges.append(.centuryClub300)
-        } else if careerStats.totalDongs >= 200 {
-            achievements.badges.append(.centuryClub200)
-        } else if careerStats.totalDongs >= 100 {
-            achievements.badges.append(.centuryClub100)
+        // Century Club tier
+        achievements.centuryTier = CenturyTier.tier(for: careerStats.totalDongs)
+
+        // YFSLA Champ count
+        achievements.yfslaChampCount = YFSLAChampions.champCount(for: playerName)
+
+        // Coattails
+        achievements.hasCoattails = CoattailsPlayers.hasCoattails(playerName)
+
+        // Count MVP, Dong King, and Rookie of Year awards from historical seasons
+        let allAwards = getAllSeasonAwards()
+        for award in allAwards {
+            if let mvp = award.mvp, PlayerAliases.canonicalName(for: mvp) == playerName {
+                achievements.mvpCount += 1
+            }
+            if let dk = award.dongKing, PlayerAliases.canonicalName(for: dk) == playerName {
+                achievements.dongKingCount += 1
+            }
+            if let roy = award.rookieOfYear, PlayerAliases.canonicalName(for: roy) == playerName {
+                achievements.rookieOfYearCount += 1
+            }
         }
 
         return achievements
@@ -158,7 +340,7 @@ struct AchievementsCalculator {
             }
         }
 
-        // Find Best New Baby (rookie with best performance)
+        // Find Rookie of the Year (rookie with best performance)
         var bestRookieDongs = 0
         for player in season.playerStats {
             let canonical = PlayerAliases.canonicalName(for: player.playerName)
@@ -166,8 +348,8 @@ struct AchievementsCalculator {
             if !previousPlayers.contains(canonical) {
                 if player.dongs > bestRookieDongs {
                     bestRookieDongs = player.dongs
-                    awards.bestNewBaby = player.playerName
-                    awards.bestNewBabyDongs = player.dongs
+                    awards.rookieOfYear = player.playerName
+                    awards.rookieOfYearDongs = player.dongs
                 }
             }
         }
@@ -178,7 +360,8 @@ struct AchievementsCalculator {
     // MARK: - Get All Season Awards
     static func getAllSeasonAwards() -> [SeasonAwards] {
         var allAwards: [SeasonAwards] = []
-        let seasons = HistoricalData.seasons
+        // Filter out season 8 since it's the current season
+        let seasons = HistoricalData.seasons.filter { $0.seasonNumber < 8 }
 
         for (index, season) in seasons.enumerated() {
             let previousSeasons = Array(seasons.prefix(index))
@@ -202,6 +385,6 @@ struct AchievementsCalculator {
             achievementsList.append(achievements)
         }
 
-        return achievementsList.filter { !$0.badges.isEmpty }
+        return achievementsList.filter { $0.hasBadges }
     }
 }

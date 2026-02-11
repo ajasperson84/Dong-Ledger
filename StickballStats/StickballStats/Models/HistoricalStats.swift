@@ -621,48 +621,8 @@ struct HistoricalData {
                 HistoricalPlayerSeasonStats(playerName: "Rookie Praveen", dongs: 1, drops: 0, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "Rookie Brett", dongs: 1, drops: 0, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0)
             ]
-        ),
-
-        // Season 8: Brand New Baby (current season totals)
-        HistoricalSeasonStats(
-            seasonNumber: 8,
-            seasonName: "Brand New Baby",
-            playerStats: [
-                HistoricalPlayerSeasonStats(playerName: "Surgeon", dongs: 26, drops: 4, doublePlays: 1, salamies: 1, wins: 5, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Flash Dance", dongs: 21, drops: 4, doublePlays: 0, salamies: 1, wins: 4, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Dong Robber", dongs: 16, drops: 5, doublePlays: 1, salamies: 1, wins: 4, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Lunch Money", dongs: 13, drops: 7, doublePlays: 0, salamies: 2, wins: 1, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Cuidado", dongs: 13, drops: 7, doublePlays: 0, salamies: 0, wins: 3, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Boogie Joe", dongs: 8, drops: 12, doublePlays: 0, salamies: 0, wins: 3, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Goat Cheese", dongs: 8, drops: 3, doublePlays: 0, salamies: 0, wins: 2, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "The Deal", dongs: 7, drops: 14, doublePlays: 1, salamies: 0, wins: 2, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Cojones", dongs: 4, drops: 6, doublePlays: 2, salamies: 0, wins: 1, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Barely Bonds", dongs: 4, drops: 10, doublePlays: 0, salamies: 0, wins: 2, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Candyman", dongs: 3, drops: 4, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Salary", dongs: 3, drops: 3, doublePlays: 0, salamies: 0, wins: 2, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Rookie Adam", dongs: 3, drops: 1, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "White Noize", dongs: 3, drops: 11, doublePlays: 0, salamies: 1, wins: 0, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Rookie Coop", dongs: 3, drops: 1, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Grom", dongs: 3, drops: 4, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Slacker", dongs: 2, drops: 6, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Katfish", dongs: 0, drops: 1, doublePlays: 1, salamies: 0, wins: 2, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Party Platter", dongs: 1, drops: 4, doublePlays: 0, salamies: 0, wins: 2, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Hot Tub", dongs: 1, drops: 1, doublePlays: 0, salamies: 0, wins: 2, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Rookie Derek", dongs: 1, drops: 11, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Rookie Jackson", dongs: 1, drops: 0, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Uncle Kimmy", dongs: 0, drops: 8, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Baby Boi", dongs: 0, drops: 2, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Summer Camp", dongs: 0, drops: 3, doublePlays: 1, salamies: 0, wins: 1, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Extra Credit", dongs: 0, drops: 1, doublePlays: 0, salamies: 0, wins: 2, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "The Swarm", dongs: 0, drops: 3, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Rookie Aiden", dongs: 0, drops: 0, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Natural", dongs: 0, drops: 1, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Puppet Master", dongs: 0, drops: 1, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Hot Dog", dongs: 0, drops: 2, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Rookie Danger", dongs: 0, drops: 1, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Rookie Han", dongs: 0, drops: 2, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0)
-            ]
         )
+        // Season 8 stats come from weekly aggregation only, not historical data
     ]
 
     /// Calculate career stats for all players across all seasons

@@ -283,17 +283,22 @@ class StatsService: ObservableObject {
         var statsDict: [String: YearlyStats] = [:]
 
         // Include all stats from the season (both 2025 and 2026 portions)
+        // Apply alias mapping to merge duplicates (e.g., "Boogie" -> "Boogie Joe")
         for weekly in weeklyStats {
             // Check if this week is part of our season
             if schedule.gameWeek(forWeekNumber: weekly.weekNumber) != nil {
                 let year = 2026 // Use consistent year for season stats
-                if var yearly = statsDict[weekly.playerId] {
+                // Apply alias mapping to get canonical player name
+                let canonicalName = PlayerAliases.canonicalName(for: weekly.playerName)
+
+                // Use canonical name as key to merge aliases
+                if var yearly = statsDict[canonicalName] {
                     yearly.addWeeklyStats(weekly)
-                    statsDict[weekly.playerId] = yearly
+                    statsDict[canonicalName] = yearly
                 } else {
-                    var newYearly = YearlyStats(playerId: weekly.playerId, playerName: weekly.playerName, year: year)
+                    var newYearly = YearlyStats(playerId: weekly.playerId, playerName: canonicalName, year: year)
                     newYearly.addWeeklyStats(weekly)
-                    statsDict[weekly.playerId] = newYearly
+                    statsDict[canonicalName] = newYearly
                 }
             }
         }

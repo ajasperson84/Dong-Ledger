@@ -24,8 +24,8 @@ struct PastSeasonsView: View {
                             .neonGlow(color: TronColors.cyan, radius: 8)
                             .padding(.top, 16)
 
-                        // Season cards
-                        ForEach(HistoricalData.seasons.reversed()) { season in
+                        // Season cards - filter out season 8 (current season)
+                        ForEach(HistoricalData.seasons.filter { $0.seasonNumber < 8 }.reversed()) { season in
                             SeasonCard(season: season)
                                 .onTapGesture {
                                     selectedSeason = season
@@ -306,18 +306,18 @@ struct SeasonAwardsView: View {
                             )
                         }
 
-                        // Best New Baby (Rookie of the Year)
-                        if let rookie = awards.bestNewBaby {
+                        // Rookie of the Year
+                        if let rookie = awards.rookieOfYear {
                             AwardCard(
-                                title: "BEST NEW BABY",
+                                title: "ROOKIE OF THE YEAR",
                                 icon: "figure.child",
                                 color: TronColors.green,
                                 playerName: rookie,
-                                stat: "\(awards.bestNewBabyDongs) DONGS"
+                                stat: "\(awards.rookieOfYearDongs) DONGS"
                             )
                         }
 
-                        if awards.dongKing == nil && awards.mvp == nil && awards.bestNewBaby == nil {
+                        if awards.dongKing == nil && awards.mvp == nil && awards.rookieOfYear == nil {
                             Text("NO AWARDS DATA")
                                 .font(.system(size: 14, weight: .medium, design: .monospaced))
                                 .foregroundColor(TronColors.dimText)
