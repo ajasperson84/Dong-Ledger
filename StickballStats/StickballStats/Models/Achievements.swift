@@ -244,7 +244,8 @@ struct YFSLAChampions {
         "Candyman": 3,
         "Katfish": 2,
         "Cojones": 1,
-        "Hot Tub": 3
+        "Hot Tub": 3,
+        "Dr. Big Dick": 2
     ]
 
     static func champCount(for playerName: String) -> Int {
