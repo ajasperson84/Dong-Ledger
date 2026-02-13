@@ -67,6 +67,7 @@ struct WeeklyStatsView: View {
                     // Header with week navigation
                     WeekNavigationHeader()
                         .environmentObject(statsService)
+                        .environmentObject(adminService)
 
                     // Content based on state
                     if statsService.players.isEmpty {
@@ -289,6 +290,7 @@ struct CompactStatBadge: View {
 // MARK: - Week Navigation Header
 struct WeekNavigationHeader: View {
     @EnvironmentObject var statsService: StatsService
+    @EnvironmentObject var adminService: AdminService
     @State private var showingFieldPicker = false
 
     var body: some View {
@@ -343,9 +345,10 @@ struct WeekNavigationHeader: View {
                 .disabled(!statsService.canGoNext())
             }
 
-            // Field selector button
+            // Field selector button (read-only for non-admins)
             FieldSelectorButton(
                 weekNumber: statsService.currentWeekNumber,
+                isAdminMode: adminService.isAdminMode,
                 onTap: { showingFieldPicker = true }
             )
             .environmentObject(statsService)
@@ -364,6 +367,7 @@ struct WeekNavigationHeader: View {
 struct FieldSelectorButton: View {
     @EnvironmentObject var statsService: StatsService
     let weekNumber: Int
+    var isAdminMode: Bool = true
     let onTap: () -> Void
 
     var currentField: GameField? {
@@ -394,8 +398,10 @@ struct FieldSelectorButton: View {
                     Text("NO FIELD SET")
                         .font(.system(size: 11, weight: .medium, design: .monospaced))
                 }
-                Image(systemName: "chevron.down")
-                    .font(.system(size: 9))
+                if isAdminMode {
+                    Image(systemName: "chevron.down")
+                        .font(.system(size: 9))
+                }
             }
             .foregroundColor(currentField != nil ? TronColors.green : TronColors.dimText)
             .padding(.horizontal, 12)
@@ -407,6 +413,7 @@ struct FieldSelectorButton: View {
                     .stroke(currentField != nil ? TronColors.green.opacity(0.5) : TronColors.gridLine.opacity(0.3), lineWidth: 1)
             )
         }
+        .disabled(!isAdminMode)
     }
 }
 
