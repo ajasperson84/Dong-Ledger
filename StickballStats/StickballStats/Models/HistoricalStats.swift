@@ -388,6 +388,15 @@ struct CareerStats: Identifiable {
         totalDongRobs += season.dongRobs
         seasonsPlayed += 1
     }
+
+    mutating func addYearlyStats(_ yearly: YearlyStats) {
+        totalDongs += yearly.totalDongs
+        totalDrops += yearly.totalDrops
+        totalDoublePlays += yearly.totalDoublePlays
+        totalSalamies += yearly.totalSalamies
+        totalWins += yearly.totalWins
+        seasonsPlayed += 1
+    }
 }
 
 // MARK: - Historical Data
@@ -626,7 +635,8 @@ struct HistoricalData {
     ]
 
     /// Calculate career stats for all players across all seasons
-    static func calculateCareerStats() -> [CareerStats] {
+    /// Pass currentSeasonStats to include the current season from Firebase
+    static func calculateCareerStats(currentSeasonStats: [YearlyStats] = []) -> [CareerStats] {
         var careerDict: [String: CareerStats] = [:]
 
         for season in seasons {
@@ -639,6 +649,17 @@ struct HistoricalData {
 
                 careerDict[canonicalName]?.add(season: playerSeason)
             }
+        }
+
+        // Merge in current season stats from Firebase
+        for yearly in currentSeasonStats {
+            let canonicalName = PlayerAliases.canonicalName(for: yearly.playerName)
+
+            if careerDict[canonicalName] == nil {
+                careerDict[canonicalName] = CareerStats(playerName: canonicalName)
+            }
+
+            careerDict[canonicalName]?.addYearlyStats(yearly)
         }
 
         return Array(careerDict.values).sorted { $0.totalDongs > $1.totalDongs }

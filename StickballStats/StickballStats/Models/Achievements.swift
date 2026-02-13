@@ -364,8 +364,8 @@ struct AchievementsCalculator {
     }
 
     // MARK: - Get All Player Achievements
-    static func getAllPlayerAchievements() -> [PlayerAchievements] {
-        let careerStats = HistoricalData.calculateCareerStats()
+    static func getAllPlayerAchievements(currentSeasonStats: [YearlyStats] = []) -> [PlayerAchievements] {
+        let careerStats = HistoricalData.calculateCareerStats(currentSeasonStats: currentSeasonStats)
         var achievementsList: [PlayerAchievements] = []
 
         for stats in careerStats {

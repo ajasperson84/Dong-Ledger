@@ -17,8 +17,10 @@ struct PlayersView: View {
     @State private var selectedCareerStats: CareerStats?
     @State private var showingAdminPIN = false
 
-    // Get all career stats for lookup
-    private let allCareerStats = HistoricalData.calculateCareerStats()
+    // Get all career stats for lookup (includes current season from Firebase)
+    private var allCareerStats: [CareerStats] {
+        HistoricalData.calculateCareerStats(currentSeasonStats: statsService.yearlyStats)
+    }
 
     // Find career stats for a player by name
     private func careerStatsFor(_ player: Player) -> CareerStats? {

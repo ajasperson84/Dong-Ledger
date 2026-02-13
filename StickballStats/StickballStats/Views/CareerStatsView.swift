@@ -12,7 +12,9 @@ struct CareerStatsView: View {
     @State private var selectedCategory: StatCategory = .dongs
     @State private var selectedPlayer: CareerStats?
 
-    let careerStats = HistoricalData.calculateCareerStats()
+    var careerStats: [CareerStats] {
+        HistoricalData.calculateCareerStats(currentSeasonStats: statsService.yearlyStats)
+    }
 
     enum StatCategory: String, CaseIterable {
         case dongs = "DONGS"
@@ -199,10 +201,9 @@ struct PlayerCareerDetailView: View {
     let stats: CareerStats
     @Environment(\.dismiss) var dismiss
 
-    // Get achievements for this player
+    // Get achievements for this player (uses combined career stats already passed in)
     var playerAchievements: PlayerAchievements {
-        let allAchievements = AchievementsCalculator.getAllPlayerAchievements()
-        return allAchievements.first { $0.playerName == stats.playerName } ?? PlayerAchievements(playerName: stats.playerName)
+        AchievementsCalculator.calculateAchievements(for: stats.playerName, careerStats: stats)
     }
 
     var body: some View {
