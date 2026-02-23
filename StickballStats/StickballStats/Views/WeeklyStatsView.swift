@@ -227,24 +227,22 @@ struct WeeklyStatRow: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 6) {
-                // Short name (max 5 chars)
+            HStack(spacing: 8) {
+                // Player name
                 Text(player.name.shortName)
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
+                    .font(.system(size: 15, weight: .bold, design: .monospaced))
                     .foregroundColor(TronColors.cyan)
-                    .frame(width: 52, alignment: .leading)
+                    .frame(width: 64, alignment: .leading)
                     .lineLimit(1)
 
-                // Stats in a row
-                HStack(spacing: 2) {
+                // Stats in a row - spread across the screen
+                HStack(spacing: 0) {
                     CompactStatBadge(value: stats.dongs, label: "D", color: TronColors.cyan)
                     CompactStatBadge(value: stats.drops, label: "R", color: TronColors.orange)
                     CompactStatBadge(value: stats.doublePlays, label: "DP", color: TronColors.magenta)
                     CompactStatBadge(value: stats.salamies, label: "S", color: TronColors.green)
                     CompactStatBadge(value: stats.wins, label: "W", color: TronColors.yellow)
                 }
-
-                Spacer()
 
                 // Only show edit chevron in admin mode
                 if isAdminMode {
@@ -274,16 +272,16 @@ struct CompactStatBadge: View {
     let color: Color
 
     var body: some View {
-        VStack(spacing: 1) {
+        VStack(spacing: 2) {
             Text("\(value)")
-                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                .font(.system(size: 18, weight: .bold, design: .monospaced))
                 .foregroundColor(value > 0 ? color : TronColors.dimText)
 
             Text(label)
-                .font(.system(size: 7, weight: .medium, design: .monospaced))
+                .font(.system(size: 9, weight: .medium, design: .monospaced))
                 .foregroundColor(color.opacity(0.6))
         }
-        .frame(width: 30)
+        .frame(maxWidth: .infinity)
     }
 }
 

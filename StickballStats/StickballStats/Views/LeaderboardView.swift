@@ -32,15 +32,15 @@ struct LeaderboardView: View {
     var sortedStats: [YearlyStats] {
         switch selectedCategory {
         case .dongs:
-            return statsService.yearlyStats.sorted { $0.totalDongs > $1.totalDongs }
+            return statsService.yearlyStats.filter { $0.totalDongs > 0 }.sorted { $0.totalDongs > $1.totalDongs }
         case .drops:
-            return statsService.yearlyStats.sorted { $0.totalDrops > $1.totalDrops } // Most drops first
+            return statsService.yearlyStats.filter { $0.totalDrops > 0 }.sorted { $0.totalDrops > $1.totalDrops }
         case .doublePlays:
-            return statsService.yearlyStats.sorted { $0.totalDoublePlays > $1.totalDoublePlays } // Most first
+            return statsService.yearlyStats.filter { $0.totalDoublePlays > 0 }.sorted { $0.totalDoublePlays > $1.totalDoublePlays }
         case .salamies:
-            return statsService.yearlyStats.sorted { $0.totalSalamies > $1.totalSalamies }
+            return statsService.yearlyStats.filter { $0.totalSalamies > 0 }.sorted { $0.totalSalamies > $1.totalSalamies }
         case .wins:
-            return statsService.yearlyStats.sorted { $0.totalWins > $1.totalWins }
+            return statsService.yearlyStats.filter { $0.totalWins > 0 }.sorted { $0.totalWins > $1.totalWins }
         }
     }
 

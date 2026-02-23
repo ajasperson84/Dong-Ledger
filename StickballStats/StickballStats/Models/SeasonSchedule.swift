@@ -85,7 +85,6 @@ class SeasonSchedule {
     // Special event dates (month, day, year)
     private let specialEvents: [(month: Int, day: Int, year: Int, event: SpecialEvent)] = [
         (1, 10, 2026, .newYearsBabyCup),
-        (2, 21, 2026, .allStarGame),
         (4, 25, 2026, .theGalactics),
         (5, 9, 2026, .dadsVsLads),
         (6, 6, 2026, .theEnd)
