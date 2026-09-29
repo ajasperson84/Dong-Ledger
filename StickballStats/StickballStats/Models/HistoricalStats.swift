@@ -338,7 +338,11 @@ struct PlayerAliases {
 
         "web": "Web",
 
-        "cricket": "Cricket"
+        "cricket": "Cricket",
+
+        "psycho": "Psycho",
+        "bean": "Psycho",
+        "rookie bean": "Psycho"
     ]
 
     /// Get canonical player name from any alias
@@ -660,11 +664,10 @@ struct HistoricalData {
                 HistoricalPlayerSeasonStats(playerName: "White Noize", dongs: 3, drops: 15, doublePlays: 0, salamies: 1, wins: 0, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "Hot Tub", dongs: 1, drops: 1, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "Summer Camp", dongs: 1, drops: 5, doublePlays: 0, salamies: 0, wins: 2, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Bean", dongs: 0, drops: 7, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "Dong Quixote", dongs: 0, drops: 1, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "Katfish", dongs: 0, drops: 4, doublePlays: 1, salamies: 0, wins: 4, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Psycho", dongs: 0, drops: 7, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "Puppet Master", dongs: 0, drops: 7, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
-                HistoricalPlayerSeasonStats(playerName: "Rookie Bean", dongs: 0, drops: 0, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "Rookie Danger", dongs: 0, drops: 3, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "The Swarm", dongs: 0, drops: 2, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "Uncle Kimmy", dongs: 0, drops: 30, doublePlays: 0, salamies: 0, wins: 7, dongRobs: 0)
