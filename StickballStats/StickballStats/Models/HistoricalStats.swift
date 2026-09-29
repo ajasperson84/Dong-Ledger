@@ -632,10 +632,10 @@ struct HistoricalData {
             ]
         ),
 
-        // Season 8: Nov 2025 – Jun 2026 (archived from weekly Firebase stats)
+        // Season 8: Brand New Baby (Nov 2025 – Jun 2026, archived from weekly Firebase stats)
         HistoricalSeasonStats(
             seasonNumber: 8,
-            seasonName: "2025-26 Season",
+            seasonName: "Brand New Baby",
             playerStats: [
                 HistoricalPlayerSeasonStats(playerName: "Flash Dance", dongs: 70, drops: 9, doublePlays: 0, salamies: 6, wins: 14, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "Cuidado", dongs: 64, drops: 22, doublePlays: 1, salamies: 1, wins: 12, dongRobs: 0),
