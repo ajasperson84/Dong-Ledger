@@ -12,6 +12,7 @@ struct WeeklyStatsView: View {
     @EnvironmentObject var adminService: AdminService
     @State private var showingPlayerSelection = false
     @State private var showingBatchEntry = false
+    @State private var showingSchedule = false
     @State private var selectedPlayer: Player?
 
     // Players who have stats for current week (i.e., were selected to play)
@@ -70,7 +71,12 @@ struct WeeklyStatsView: View {
                         .environmentObject(adminService)
 
                     // Content based on state
-                    if statsService.players.isEmpty {
+                    if let gameWeek = statsService.currentGameWeek, gameWeek.isBlockedOut {
+                        BlockedOutWeekView(gameWeek: gameWeek)
+                    } else if statsService.isViewingFutureWeek, let gameWeek = statsService.currentGameWeek {
+                        UpcomingWeekView(gameWeek: gameWeek)
+                            .environmentObject(statsService)
+                    } else if statsService.players.isEmpty {
                         EmptyStateView(
                             icon: "person.badge.plus",
                             title: "NO PLAYERS",
@@ -173,8 +179,15 @@ struct WeeklyStatsView: View {
                         .foregroundColor(TronColors.cyan)
                 }
 
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: { showingSchedule = true }) {
+                        Image(systemName: "calendar")
+                            .foregroundColor(TronColors.cyan)
+                    }
+                }
+
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    if adminService.isAdminMode {
+                    if adminService.isAdminMode && statsService.canEnterStatsForCurrentWeek {
                         HStack(spacing: 12) {
                             // Add/edit players for week
                             Button(action: { showingPlayerSelection = true }) {
@@ -205,6 +218,10 @@ struct WeeklyStatsView: View {
                 BatchStatsEntryView()
                     .environmentObject(statsService)
             }
+            .sheet(isPresented: $showingSchedule) {
+                SeasonScheduleView()
+                    .environmentObject(statsService)
+            }
         }
     }
 
@@ -213,7 +230,8 @@ struct WeeklyStatsView: View {
         return statsService.weeklyStats.first {
             $0.playerId == playerId &&
             $0.weekNumber == statsService.currentWeek &&
-            $0.year == statsService.currentYear
+            $0.year == statsService.currentYear &&
+            $0.seasonNumber == statsService.currentSeason
         }
     }
 }
@@ -313,17 +331,34 @@ struct WeekNavigationHeader: View {
                                 .font(.system(size: 14, weight: .bold, design: .monospaced))
                                 .foregroundColor(TronColors.magenta)
                                 .neonGlow(color: TronColors.magenta, radius: 5)
+
+                            if let subtitle = event.subtitle {
+                                Text(subtitle.uppercased())
+                                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                    .foregroundColor(TronColors.magenta.opacity(0.8))
+                                    .multilineTextAlignment(.center)
+                            }
                         }
 
-                        Text("WEEK \(statsService.currentWeekNumber)")
-                            .font(.system(size: gameWeek.specialEvent != nil ? 16 : 24, weight: .bold, design: .monospaced))
-                            .foregroundColor(TronColors.cyan)
-                            .neonGlow(color: TronColors.cyan, radius: gameWeek.specialEvent != nil ? 4 : 8)
+                        if !gameWeek.isBlockedOut {
+                            Text("WEEK \(statsService.currentWeekNumber)")
+                                .font(.system(size: gameWeek.specialEvent != nil ? 16 : 24, weight: .bold, design: .monospaced))
+                                .foregroundColor(TronColors.cyan)
+                                .neonGlow(color: TronColors.cyan, radius: gameWeek.specialEvent != nil ? 4 : 8)
+                        }
 
                         // Date
-                        Text(gameWeek.formattedDate.uppercased())
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
-                            .foregroundColor(TronColors.secondaryText)
+                        HStack(spacing: 6) {
+                            Text(gameWeek.formattedDate.uppercased())
+                                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                                .foregroundColor(TronColors.secondaryText)
+
+                            if statsService.isViewingFutureWeek {
+                                Text("UPCOMING")
+                                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                    .foregroundColor(TronColors.yellow)
+                            }
+                        }
                     } else {
                         Text("WEEK \(statsService.currentWeekNumber)")
                             .font(.system(size: 24, weight: .bold, design: .monospaced))
@@ -344,15 +379,32 @@ struct WeekNavigationHeader: View {
             }
 
             // Field selector button (read-only for non-admins)
-            FieldSelectorButton(
-                weekNumber: statsService.currentWeekNumber,
-                isAdminMode: adminService.isAdminMode,
-                onTap: { showingFieldPicker = true }
-            )
-            .environmentObject(statsService)
-            .sheet(isPresented: $showingFieldPicker) {
-                FieldPickerSheet(weekNumber: statsService.currentWeekNumber)
+            if !(statsService.currentGameWeek?.isBlockedOut ?? false) {
+                HStack(spacing: 8) {
+                    FieldSelectorButton(
+                        weekNumber: statsService.currentWeekNumber,
+                        isAdminMode: adminService.isAdminMode,
+                        onTap: { showingFieldPicker = true }
+                    )
                     .environmentObject(statsService)
+
+                    if statsService.gameWeekInfos[statsService.currentWeekNumber]?.gameField?.isNightGame ?? false {
+                        NightGameBadge()
+                    }
+                }
+                .sheet(isPresented: $showingFieldPicker) {
+                    FieldPickerSheet(weekNumber: statsService.currentWeekNumber)
+                        .environmentObject(statsService)
+                }
+            }
+
+            // Shortcut back to this week's game when browsing other weeks
+            if statsService.currentWeekIndex != statsService.schedule.currentWeekIndex() {
+                Button(action: { statsService.goToCurrentWeek() }) {
+                    Text("BACK TO THIS WEEK")
+                        .font(.system(size: 9, weight: .bold, design: .monospaced))
+                        .foregroundColor(TronColors.cyan.opacity(0.8))
+                }
             }
         }
         .padding(.horizontal, 16)
@@ -374,11 +426,7 @@ struct FieldSelectorButton: View {
 
     var fieldIcon: String {
         guard let field = currentField else { return "mappin.circle" }
-        switch field {
-        case .theDam: return "water.waves"
-        case .theSpreadingGrounds: return "leaf.fill"
-        case .theAirfield: return "airplane"
-        }
+        return field.icon
     }
 
     var body: some View {
@@ -473,11 +521,7 @@ struct FieldOptionRow: View {
     let onSelect: () -> Void
 
     var fieldIcon: String {
-        switch field {
-        case .theDam: return "water.waves"
-        case .theSpreadingGrounds: return "leaf.fill"
-        case .theAirfield: return "airplane"
-        }
+        return field.icon
     }
 
     var body: some View {
@@ -511,6 +555,227 @@ struct FieldOptionRow: View {
             )
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Night Game Badge
+struct NightGameBadge: View {
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "moon.stars.fill")
+                .font(.system(size: 10))
+            Text("NIGHT GAME")
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+        }
+        .foregroundColor(TronColors.yellow)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(TronColors.yellow.opacity(0.12))
+        .cornerRadius(6)
+        .overlay(
+            RoundedRectangle(cornerRadius: 6)
+                .stroke(TronColors.yellow.opacity(0.5), lineWidth: 1)
+        )
+    }
+}
+
+// MARK: - Upcoming Week
+struct UpcomingWeekView: View {
+    @EnvironmentObject var statsService: StatsService
+    let gameWeek: GameWeek
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Spacer()
+
+            Image(systemName: "calendar.badge.clock")
+                .font(.system(size: 56))
+                .foregroundColor(TronColors.cyan.opacity(0.5))
+
+            Text("UPCOMING GAME")
+                .font(.system(size: 18, weight: .bold, design: .monospaced))
+                .foregroundColor(TronColors.secondaryText)
+
+            Text(gameWeek.formattedDate.uppercased())
+                .font(.system(size: 14, weight: .medium, design: .monospaced))
+                .foregroundColor(TronColors.cyan)
+
+            if gameWeek.specialEvent?.includesPortland ?? false {
+                Text("PORTLAND CHAPTER IN TOWN")
+                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .foregroundColor(TronColors.magenta)
+            }
+
+            Text("Stats open on game day")
+                .font(.system(size: 12, design: .monospaced))
+                .foregroundColor(TronColors.dimText)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Blocked Out Week
+struct BlockedOutWeekView: View {
+    let gameWeek: GameWeek
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Spacer()
+
+            Image(systemName: "flag.2.crossed.fill")
+                .font(.system(size: 56))
+                .foregroundColor(TronColors.magenta)
+                .neonGlow(color: TronColors.magenta, radius: 10)
+
+            Text((gameWeek.specialEvent?.rawValue ?? "Blocked Out").uppercased())
+                .font(.system(size: 22, weight: .bold, design: .monospaced))
+                .foregroundColor(TronColors.magenta)
+                .neonGlow(color: TronColors.magenta, radius: 6)
+
+            if let subtitle = gameWeek.specialEvent?.subtitle {
+                Text(subtitle.uppercased())
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundColor(TronColors.secondaryText)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 32)
+            }
+
+            Text("NO LEAGUE GAME THIS WEEKEND")
+                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .foregroundColor(TronColors.dimText)
+
+            Spacer()
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+// MARK: - Season Schedule
+struct SeasonScheduleView: View {
+    @EnvironmentObject var statsService: StatsService
+    @Environment(\.dismiss) var dismiss
+
+    var body: some View {
+        let _ = statsService.lastFieldUpdate
+        let thisWeekIndex = statsService.schedule.currentWeekIndex()
+
+        NavigationStack {
+            ZStack {
+                TronGridBackground()
+
+                ScrollViewReader { proxy in
+                    ScrollView {
+                        LazyVStack(spacing: 6) {
+                            ForEach(Array(statsService.schedule.gameWeeks.enumerated()), id: \.element.id) { index, week in
+                                Button(action: {
+                                    statsService.goToWeek(index: index)
+                                    dismiss()
+                                }) {
+                                    ScheduleRow(
+                                        week: week,
+                                        field: statsService.gameWeekInfos[week.weekNumber]?.gameField,
+                                        isThisWeek: index == thisWeekIndex,
+                                        isUpcoming: statsService.schedule.isFutureWeek(index: index)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                .id(index)
+                            }
+                        }
+                        .padding(16)
+                    }
+                    .onAppear {
+                        proxy.scrollTo(thisWeekIndex, anchor: .center)
+                    }
+                }
+            }
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    Text("SEASON SCHEDULE")
+                        .font(.system(size: 16, weight: .bold, design: .monospaced))
+                        .foregroundColor(TronColors.cyan)
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Done") { dismiss() }
+                        .foregroundColor(TronColors.cyan)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - Schedule Row
+struct ScheduleRow: View {
+    let week: GameWeek
+    let field: GameField?
+    let isThisWeek: Bool
+    let isUpcoming: Bool
+
+    private var accent: Color {
+        if week.isBlockedOut || week.specialEvent != nil { return TronColors.magenta }
+        return isUpcoming ? TronColors.secondaryText : TronColors.cyan
+    }
+
+    var body: some View {
+        HStack(spacing: 12) {
+            Text(week.shortFormattedDate)
+                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .foregroundColor(accent)
+                .frame(width: 48, alignment: .leading)
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(week.isBlockedOut ? week.displayTitle.uppercased() : "WEEK \(week.weekNumber)")
+                    .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    .foregroundColor(TronColors.primaryText)
+
+                if let event = week.specialEvent, !week.isBlockedOut {
+                    Text(event.rawValue.uppercased())
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundColor(TronColors.magenta)
+                }
+
+                if week.isBlockedOut {
+                    Text("BLOCKED OUT · NO LEAGUE GAME")
+                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .foregroundColor(TronColors.magenta.opacity(0.8))
+                } else if let field = field {
+                    HStack(spacing: 4) {
+                        Image(systemName: field.icon)
+                        Text(field.rawValue.uppercased())
+                        if field.isNightGame {
+                            Text("· NIGHT GAME")
+                                .foregroundColor(TronColors.yellow)
+                        }
+                    }
+                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .foregroundColor(field.isNightGame ? TronColors.yellow : TronColors.green)
+                }
+            }
+
+            Spacer()
+
+            if isThisWeek {
+                Text("NOW")
+                    .font(.system(size: 9, weight: .bold, design: .monospaced))
+                    .foregroundColor(TronColors.darkBackground)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 3)
+                    .background(TronColors.cyan)
+                    .cornerRadius(4)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(week.isBlockedOut ? TronColors.magenta.opacity(0.12) : TronColors.cardBackground)
+        .cornerRadius(8)
+        .overlay(
+            RoundedRectangle(cornerRadius: 8)
+                .stroke(isThisWeek ? TronColors.cyan : (week.specialEvent != nil ? TronColors.magenta.opacity(0.5) : TronColors.gridLine.opacity(0.3)), lineWidth: isThisWeek ? 2 : 1)
+        )
+        .opacity(isUpcoming || isThisWeek ? 1 : 0.7)
     }
 }
 

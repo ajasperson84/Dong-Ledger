@@ -12,32 +12,65 @@ enum GameField: String, CaseIterable, Codable {
     case theDam = "The Dam"
     case theSpreadingGrounds = "The Spreading Grounds"
     case theAirfield = "The Airfield"
+    case uncleKimmysPlayhouse = "Uncle Kimmy's Playhouse"
 
     var shortName: String {
         switch self {
         case .theDam: return "DAM"
         case .theSpreadingGrounds: return "SPRD"
         case .theAirfield: return "AIR"
+        case .uncleKimmysPlayhouse: return "UKP"
         }
+    }
+
+    var icon: String {
+        switch self {
+        case .theDam: return "water.waves"
+        case .theSpreadingGrounds: return "leaf.fill"
+        case .theAirfield: return "airplane"
+        case .uncleKimmysPlayhouse: return "moon.stars.fill"
+        }
+    }
+
+    /// Uncle Kimmy's Playhouse hosts the monthly Saturday night game
+    var isNightGame: Bool {
+        self == .uncleKimmysPlayhouse
     }
 }
 
 // MARK: - Special Event
 enum SpecialEvent: String {
-    case newYearsBabyCup = "New Years Baby Cup"
-    case allStarGame = "All Star Game"
-    case theGalactics = "The Galactics"
+    case coattailClassic = "The Coattail Classic"
+    case theWideOpen = "The Wide Open"
     case dadsVsLads = "Dads Vs Lads"
     case theEnd = "The End"
 
     var shortName: String {
         switch self {
-        case .newYearsBabyCup: return "BABY CUP"
-        case .allStarGame: return "ALL STAR"
-        case .theGalactics: return "GALACTICS"
+        case .coattailClassic: return "COATTAIL"
+        case .theWideOpen: return "WIDE OPEN"
         case .dadsVsLads: return "DVL"
         case .theEnd: return "CHAMPIONSHIP"
         }
+    }
+
+    /// Extra line shown under the event name
+    var subtitle: String? {
+        switch self {
+        case .coattailClassic: return "LA vs Portland · 4-team tournament"
+        case .theWideOpen: return "Apr 1–4 · National tournament · No league game"
+        default: return nil
+        }
+    }
+
+    /// Blocked-out weekends have no league game and no stat entry
+    var isBlockedOut: Bool {
+        self == .theWideOpen
+    }
+
+    /// Portland chapter players can be added to this week
+    var includesPortland: Bool {
+        self == .coattailClassic
     }
 }
 
@@ -48,6 +81,8 @@ struct GameWeek: Identifiable, Equatable {
     let specialEvent: SpecialEvent?
 
     var weekNumber: Int { id }
+
+    var isBlockedOut: Bool { specialEvent?.isBlockedOut ?? false }
 
     var year: Int {
         let calendar = Calendar.current
@@ -78,27 +113,36 @@ struct GameWeek: Identifiable, Equatable {
 class SeasonSchedule {
     static let shared = SeasonSchedule()
 
+    /// Season number used by the archive (Season 8 was Nov 2025 – Jun 2026)
+    let seasonNumber = 9
+
     let gameWeeks: [GameWeek]
     let seasonStart: Date
     let seasonEnd: Date
 
     // Special event dates (month, day, year)
     private let specialEvents: [(month: Int, day: Int, year: Int, event: SpecialEvent)] = [
-        (1, 10, 2026, .newYearsBabyCup),
-        (4, 25, 2026, .theGalactics),
-        (5, 9, 2026, .dadsVsLads),
-        (6, 6, 2026, .theEnd)
+        (11, 14, 2026, .coattailClassic),
+        (4, 3, 2027, .theWideOpen),
+        (5, 8, 2027, .dadsVsLads),
+        (6, 12, 2027, .theEnd)
+    ]
+
+    // Saturdays with no game
+    private let skipDates: [(month: Int, day: Int, year: Int)] = [
+        (12, 26, 2026),
+        (1, 2, 2027)
     ]
 
     private init() {
         var calendar = Calendar.current
         calendar.timeZone = TimeZone.current
 
-        // Season: Nov 1, 2025 to June 6, 2026
-        // Games every Saturday except Dec 27, 2025 (Christmas/New Years week)
+        // Season: Oct 24, 2026 to June 12, 2027
+        // Games every Saturday except Dec 26, 2026 and Jan 2, 2027
 
-        let startComponents = DateComponents(year: 2025, month: 11, day: 1)
-        let endComponents = DateComponents(year: 2026, month: 6, day: 6)
+        let startComponents = DateComponents(year: 2026, month: 10, day: 24)
+        let endComponents = DateComponents(year: 2027, month: 6, day: 12)
 
         guard let start = calendar.date(from: startComponents),
               let end = calendar.date(from: endComponents) else {
@@ -111,18 +155,17 @@ class SeasonSchedule {
         self.seasonStart = start
         self.seasonEnd = end
 
-        // Skip date: Dec 27, 2025
-        let skipComponents = DateComponents(year: 2025, month: 12, day: 27)
-        let skipDate = calendar.date(from: skipComponents)
+        let skips = skipDates.compactMap {
+            calendar.date(from: DateComponents(year: $0.year, month: $0.month, day: $0.day))
+        }
 
         var weeks: [GameWeek] = []
         var currentDate = start
         var weekNumber = 1
 
-        // Nov 1, 2025 is a Saturday, so we start there
+        // Oct 24, 2026 is a Saturday, so we start there
         while currentDate <= end {
-            // Check if this is the skip date
-            if let skip = skipDate, calendar.isDate(currentDate, inSameDayAs: skip) {
+            if skips.contains(where: { calendar.isDate(currentDate, inSameDayAs: $0) }) {
                 // Skip this week, move to next Saturday
                 if let nextSaturday = calendar.date(byAdding: .day, value: 7, to: currentDate) {
                     currentDate = nextSaturday

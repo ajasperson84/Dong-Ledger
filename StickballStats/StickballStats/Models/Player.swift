@@ -24,6 +24,14 @@ struct Player: Identifiable, Codable, Hashable {
         self.updatedAt = Date()
     }
 
+    /// teamName used to mark visiting players from the Portland chapter
+    static let portlandChapter = "Portland"
+
+    /// Portland players only play in the Coattail Classic and don't count toward LA stats
+    var isPortland: Bool {
+        teamName == Player.portlandChapter
+    }
+
     // Computed property for display
     var displayName: String {
         if let number = jerseyNumber {

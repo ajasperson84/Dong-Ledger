@@ -11,15 +11,21 @@ import FirebaseFirestore
 struct GameWeekInfo: Identifiable, Codable {
     @DocumentID var id: String?
     var weekNumber: Int
+    var season: Int?  // nil for entries saved before seasons were tagged (Season 8)
     var field: String?  // GameField raw value
     var createdAt: Date
     var updatedAt: Date
 
     init(weekNumber: Int, field: GameField? = nil) {
         self.weekNumber = weekNumber
+        self.season = SeasonSchedule.shared.seasonNumber
         self.field = field?.rawValue
         self.createdAt = Date()
         self.updatedAt = Date()
+    }
+
+    var seasonNumber: Int {
+        season ?? 8
     }
 
     var gameField: GameField? {

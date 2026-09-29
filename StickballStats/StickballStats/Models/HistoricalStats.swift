@@ -630,16 +630,59 @@ struct HistoricalData {
                 HistoricalPlayerSeasonStats(playerName: "Rookie Praveen", dongs: 1, drops: 0, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
                 HistoricalPlayerSeasonStats(playerName: "Rookie Brett", dongs: 1, drops: 0, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0)
             ]
+        ),
+
+        // Season 8: Nov 2025 – Jun 2026 (archived from weekly Firebase stats)
+        HistoricalSeasonStats(
+            seasonNumber: 8,
+            seasonName: "2025-26 Season",
+            playerStats: [
+                HistoricalPlayerSeasonStats(playerName: "Flash Dance", dongs: 70, drops: 9, doublePlays: 0, salamies: 6, wins: 14, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Cuidado", dongs: 64, drops: 22, doublePlays: 1, salamies: 1, wins: 12, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Surgeon", dongs: 45, drops: 6, doublePlays: 1, salamies: 1, wins: 10, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Dong Robber", dongs: 32, drops: 14, doublePlays: 1, salamies: 2, wins: 6, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Lunch Money", dongs: 22, drops: 23, doublePlays: 1, salamies: 3, wins: 5, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "The Deal", dongs: 18, drops: 26, doublePlays: 1, salamies: 0, wins: 6, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Boogie Joe", dongs: 17, drops: 25, doublePlays: 4, salamies: 0, wins: 12, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Cojones", dongs: 10, drops: 12, doublePlays: 3, salamies: 0, wins: 4, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Goat Cheese", dongs: 10, drops: 11, doublePlays: 0, salamies: 0, wins: 6, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Rookie Coop", dongs: 8, drops: 9, doublePlays: 0, salamies: 0, wins: 6, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Candyman", dongs: 7, drops: 11, doublePlays: 1, salamies: 0, wins: 3, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Barely Bonds", dongs: 6, drops: 28, doublePlays: 0, salamies: 0, wins: 11, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Extra Credit", dongs: 4, drops: 4, doublePlays: 0, salamies: 0, wins: 5, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Party Platter", dongs: 4, drops: 9, doublePlays: 0, salamies: 1, wins: 3, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Salary", dongs: 4, drops: 15, doublePlays: 0, salamies: 0, wins: 6, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Slacker", dongs: 4, drops: 6, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Baby Boi", dongs: 3, drops: 10, doublePlays: 0, salamies: 0, wins: 4, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "ODC", dongs: 3, drops: 1, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Rookie Aiden", dongs: 3, drops: 6, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Rookie Derek", dongs: 3, drops: 17, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "White Noize", dongs: 3, drops: 15, doublePlays: 0, salamies: 1, wins: 0, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Hot Tub", dongs: 1, drops: 1, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Summer Camp", dongs: 1, drops: 5, doublePlays: 0, salamies: 0, wins: 2, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Bean", dongs: 0, drops: 7, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Dong Quixote", dongs: 0, drops: 1, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Katfish", dongs: 0, drops: 4, doublePlays: 1, salamies: 0, wins: 4, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Puppet Master", dongs: 0, drops: 7, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Rookie Bean", dongs: 0, drops: 0, doublePlays: 0, salamies: 0, wins: 1, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Rookie Danger", dongs: 0, drops: 3, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "The Swarm", dongs: 0, drops: 2, doublePlays: 0, salamies: 0, wins: 0, dongRobs: 0),
+                HistoricalPlayerSeasonStats(playerName: "Uncle Kimmy", dongs: 0, drops: 30, doublePlays: 0, salamies: 0, wins: 7, dongRobs: 0)
+            ]
         )
-        // Season 8 stats come from weekly aggregation only, not historical data
     ]
+
+    /// Archived seasons that are finished (excludes the season currently being played)
+    static var pastSeasons: [HistoricalSeasonStats] {
+        seasons.filter { $0.seasonNumber < SeasonSchedule.shared.seasonNumber }
+    }
 
     /// Calculate career stats for all players across all seasons
     /// Pass currentSeasonStats to include the current season from Firebase
     static func calculateCareerStats(currentSeasonStats: [YearlyStats] = []) -> [CareerStats] {
         var careerDict: [String: CareerStats] = [:]
 
-        for season in seasons {
+        for season in pastSeasons {
             for playerSeason in season.playerStats {
                 let canonicalName = PlayerAliases.canonicalName(for: playerSeason.playerName)
 

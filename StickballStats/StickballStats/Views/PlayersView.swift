@@ -22,6 +22,24 @@ struct PlayersView: View {
         HistoricalData.calculateCareerStats(currentSeasonStats: statsService.yearlyStats)
     }
 
+    private func playerRow(_ player: Player, careerStats: CareerStats?) -> some View {
+        PlayerManagementRow(
+            player: player,
+            careerStats: careerStats,
+            isAdminMode: adminService.isAdminMode,
+            onTap: {
+                if let stats = careerStats {
+                    selectedCareerStats = stats
+                }
+            },
+            onEdit: { selectedPlayer = player },
+            onDelete: {
+                playerToDelete = player
+                showingDeleteConfirmation = true
+            }
+        )
+    }
+
     // Find career stats for a player by name
     private func careerStatsFor(_ player: Player) -> CareerStats? {
         let canonicalName = PlayerAliases.canonicalName(for: player.name)
@@ -51,22 +69,21 @@ struct PlayersView: View {
                         // Players list
                         ScrollView {
                             LazyVStack(spacing: 8) {
-                                ForEach(statsService.players) { player in
-                                    PlayerManagementRow(
-                                        player: player,
-                                        careerStats: careerStatsFor(player),
-                                        isAdminMode: adminService.isAdminMode,
-                                        onTap: {
-                                            if let stats = careerStatsFor(player) {
-                                                selectedCareerStats = stats
-                                            }
-                                        },
-                                        onEdit: { selectedPlayer = player },
-                                        onDelete: {
-                                            playerToDelete = player
-                                            showingDeleteConfirmation = true
-                                        }
-                                    )
+                                ForEach(statsService.laPlayers) { player in
+                                    playerRow(player, careerStats: careerStatsFor(player))
+                                }
+
+                                // Visiting Portland chapter (Coattail Classic only, no LA career stats)
+                                if !statsService.portlandPlayers.isEmpty {
+                                    Text("PORTLAND CHAPTER")
+                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                        .foregroundColor(TronColors.magenta)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                        .padding(.top, 12)
+
+                                    ForEach(statsService.portlandPlayers) { player in
+                                        playerRow(player, careerStats: nil)
+                                    }
                                 }
                             }
                             .padding(.horizontal, 16)

@@ -116,16 +116,25 @@ struct WeeklyPlayerSelectionView: View {
 
                     // Player grid for quick tapping
                     ScrollView {
-                        LazyVGrid(columns: [
-                            GridItem(.flexible()),
-                            GridItem(.flexible())
-                        ], spacing: 8) {
-                            ForEach(statsService.players) { player in
-                                PlayerSelectionTile(
-                                    player: player,
-                                    isSelected: selectedPlayerIds.contains(player.id ?? ""),
-                                    onTap: { togglePlayer(player) }
-                                )
+                        VStack(spacing: 12) {
+                            playerGrid(statsService.laPlayers)
+
+                            // Portland chapter joins for the Coattail Classic
+                            if showsPortland {
+                                Text("PORTLAND CHAPTER")
+                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                    .foregroundColor(TronColors.magenta)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.top, 8)
+
+                                if statsService.portlandPlayers.isEmpty {
+                                    Text("Add Portland players in the Players tab")
+                                        .font(.system(size: 11, design: .monospaced))
+                                        .foregroundColor(TronColors.dimText)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                } else {
+                                    playerGrid(statsService.portlandPlayers)
+                                }
                             }
                         }
                         .padding(.horizontal, 16)
@@ -184,6 +193,25 @@ struct WeeklyPlayerSelectionView: View {
         }
     }
 
+    private var showsPortland: Bool {
+        statsService.currentGameWeek?.specialEvent?.includesPortland ?? false
+    }
+
+    private func playerGrid(_ players: [Player]) -> some View {
+        LazyVGrid(columns: [
+            GridItem(.flexible()),
+            GridItem(.flexible())
+        ], spacing: 8) {
+            ForEach(players) { player in
+                PlayerSelectionTile(
+                    player: player,
+                    isSelected: selectedPlayerIds.contains(player.id ?? ""),
+                    onTap: { togglePlayer(player) }
+                )
+            }
+        }
+    }
+
     private func togglePlayer(_ player: Player) {
         guard let playerId = player.id else { return }
         withAnimation(.easeOut(duration: 0.15)) {
@@ -197,7 +225,7 @@ struct WeeklyPlayerSelectionView: View {
 
     private func selectAll() {
         withAnimation(.easeOut(duration: 0.2)) {
-            selectedPlayerIds = Set(statsService.players.compactMap { $0.id })
+            selectedPlayerIds = Set(statsService.selectablePlayers.compactMap { $0.id })
         }
     }
 
@@ -238,7 +266,7 @@ struct WeeklyPlayerSelectionView: View {
             }
 
             // Create stats entries for all selected players
-            for player in statsService.players {
+            for player in statsService.selectablePlayers {
                 guard let playerId = player.id, selectedPlayerIds.contains(playerId) else { continue }
 
                 do {
@@ -288,11 +316,7 @@ struct FieldChip: View {
     }
 
     var fieldIcon: String {
-        switch field {
-        case .theDam: return "water.waves"
-        case .theSpreadingGrounds: return "leaf.fill"
-        case .theAirfield: return "airplane"
-        }
+        return field.icon
     }
 }
 

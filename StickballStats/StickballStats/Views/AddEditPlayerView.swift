@@ -14,6 +14,7 @@ struct AddEditPlayerView: View {
     let player: Player?
 
     @State private var name: String = ""
+    @State private var isPortland = false
     @State private var isSaving = false
     @State private var showingError = false
     @State private var errorMessage = ""
@@ -48,6 +49,19 @@ struct AddEditPlayerView: View {
                                 text: $name,
                                 color: TronColors.cyan
                             )
+
+                            // Portland players only appear for the Coattail Classic
+                            Toggle(isOn: $isPortland) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("PORTLAND CHAPTER")
+                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                        .foregroundColor(TronColors.magenta)
+                                    Text("Coattail Classic only · not in LA stats")
+                                        .font(.system(size: 10, design: .monospaced))
+                                        .foregroundColor(TronColors.dimText)
+                                }
+                            }
+                            .tint(TronColors.magenta)
                         }
                         .padding(.horizontal, 16)
 
@@ -91,6 +105,7 @@ struct AddEditPlayerView: View {
             .onAppear {
                 if let player = player {
                     name = player.name
+                    isPortland = player.isPortland
                 }
             }
             .alert("ERROR", isPresented: $showingError) {
@@ -113,10 +128,14 @@ struct AddEditPlayerView: View {
                 if var existingPlayer = player {
                     // Update existing player
                     existingPlayer.name = trimmedName
+                    existingPlayer.teamName = isPortland ? Player.portlandChapter : nil
                     try await statsService.updatePlayer(existingPlayer)
                 } else {
                     // Add new player
-                    try await statsService.addPlayer(name: trimmedName)
+                    try await statsService.addPlayer(
+                        name: trimmedName,
+                        teamName: isPortland ? Player.portlandChapter : nil
+                    )
                 }
 
                 await MainActor.run {

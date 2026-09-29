@@ -48,6 +48,34 @@ class StatsService: ObservableObject {
         currentGameWeek?.year ?? 2026
     }
 
+    var currentSeason: Int {
+        schedule.seasonNumber
+    }
+
+    /// Viewing a week that hasn't been played yet
+    var isViewingFutureWeek: Bool {
+        schedule.isFutureWeek(index: currentWeekIndex)
+    }
+
+    /// Stats can only be entered for weeks that have happened and aren't blocked out
+    var canEnterStatsForCurrentWeek: Bool {
+        !isViewingFutureWeek && !(currentGameWeek?.isBlockedOut ?? false)
+    }
+
+    /// LA chapter roster (excludes Portland visitors)
+    var laPlayers: [Player] {
+        players.filter { !$0.isPortland }
+    }
+
+    var portlandPlayers: [Player] {
+        players.filter { $0.isPortland }
+    }
+
+    /// Players that can be picked for the current week
+    var selectablePlayers: [Player] {
+        (currentGameWeek?.specialEvent?.includesPortland ?? false) ? players : laPlayers
+    }
+
     init() {
         // Start at the most recent game that has been played
         self.currentWeekIndex = SeasonSchedule.shared.currentWeekIndex()
@@ -96,6 +124,9 @@ class StatsService: ObservableObject {
                     .sorted { $0.name.lowercased() < $1.name.lowercased() }
 
                     print("✅ Active players: \(self?.players.count ?? 0)")
+
+                    // Portland players are excluded from season totals, so recalc when roster changes
+                    self?.calculateSeasonStats()
                 }
             }
 
@@ -137,8 +168,9 @@ class StatsService: ObservableObject {
                     guard let documents = snapshot?.documents else { return }
 
                     var infos: [Int: GameWeekInfo] = [:]
+                    let season = SeasonSchedule.shared.seasonNumber
                     for doc in documents {
-                        if let info = try? doc.data(as: GameWeekInfo.self) {
+                        if let info = try? doc.data(as: GameWeekInfo.self), info.seasonNumber == season {
                             infos[info.weekNumber] = info
                         }
                     }
@@ -188,6 +220,7 @@ class StatsService: ObservableObject {
             .whereField("playerId", isEqualTo: playerId)
             .whereField("weekNumber", isEqualTo: week)
             .whereField("year", isEqualTo: year)
+            .whereField("season", isEqualTo: currentSeason)
 
         let snapshot = try await query.getDocuments()
 
@@ -232,6 +265,7 @@ class StatsService: ObservableObject {
 
         let query = db.collection("gameWeekInfo")
             .whereField("weekNumber", isEqualTo: weekNumber)
+            .whereField("season", isEqualTo: currentSeason)
 
         let snapshot = try await query.getDocuments()
 
@@ -282,12 +316,17 @@ class StatsService: ObservableObject {
     func calculateSeasonStats() {
         var statsDict: [String: YearlyStats] = [:]
 
-        // Include all stats from the season (both 2025 and 2026 portions)
+        // Portland visitors (Coattail Classic) don't count toward LA season stats
+        let portlandIds = Set(portlandPlayers.compactMap { $0.id })
+
+        // Include all stats from the current season (both calendar years)
         // Apply alias mapping to merge duplicates (e.g., "Boogie" -> "Boogie Joe")
         for weekly in weeklyStats {
             // Check if this week is part of our season
-            if schedule.gameWeek(forWeekNumber: weekly.weekNumber) != nil {
-                let year = 2026 // Use consistent year for season stats
+            if weekly.seasonNumber == currentSeason,
+               !portlandIds.contains(weekly.playerId),
+               schedule.gameWeek(forWeekNumber: weekly.weekNumber) != nil {
+                let year = currentYear // Use consistent year for season stats
                 // Apply alias mapping to get canonical player name
                 let canonicalName = PlayerAliases.canonicalName(for: weekly.playerName)
 
@@ -307,11 +346,11 @@ class StatsService: ObservableObject {
     }
 
     func getWeeklyStatsForWeek(_ week: Int) -> [WeeklyStats] {
-        return weeklyStats.filter { $0.weekNumber == week }
+        return weeklyStats.filter { $0.weekNumber == week && $0.seasonNumber == currentSeason }
     }
 
     func getStatsForPlayer(_ playerId: String) -> [WeeklyStats] {
-        return weeklyStats.filter { $0.playerId == playerId }.sorted { $0.weekNumber < $1.weekNumber }
+        return weeklyStats.filter { $0.playerId == playerId && $0.seasonNumber == currentSeason }.sorted { $0.weekNumber < $1.weekNumber }
     }
 
     // MARK: - Week Navigation
@@ -323,18 +362,21 @@ class StatsService: ObservableObject {
         }
     }
 
+    // Upcoming weeks can be browsed to see the schedule
     func nextWeek() {
-        let maxIndex = schedule.currentWeekIndex()
-        if currentWeekIndex < maxIndex {
+        if canGoNext() {
             currentWeekIndex += 1
             print("➡️ Moved to week \(currentWeekNumber)")
-        } else {
-            print("⚠️ Cannot advance past current date")
         }
     }
 
     func canGoNext() -> Bool {
-        return currentWeekIndex < schedule.currentWeekIndex()
+        return currentWeekIndex < schedule.totalWeeks - 1
+    }
+
+    // Jump back to the most recent game
+    func goToCurrentWeek() {
+        currentWeekIndex = schedule.currentWeekIndex()
     }
 
     func canGoPrevious() -> Bool {
@@ -343,8 +385,7 @@ class StatsService: ObservableObject {
 
     // Jump to specific week
     func goToWeek(index: Int) {
-        let maxIndex = schedule.currentWeekIndex()
-        if index >= 0 && index <= maxIndex {
+        if index >= 0 && index < schedule.totalWeeks {
             currentWeekIndex = index
         }
     }

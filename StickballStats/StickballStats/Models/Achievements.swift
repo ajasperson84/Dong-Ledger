@@ -351,8 +351,7 @@ struct AchievementsCalculator {
     // MARK: - Get All Season Awards
     static func getAllSeasonAwards() -> [SeasonAwards] {
         var allAwards: [SeasonAwards] = []
-        // Filter out season 8 since it's the current season
-        let seasons = HistoricalData.seasons.filter { $0.seasonNumber < 8 }
+        let seasons = HistoricalData.pastSeasons
 
         for (index, season) in seasons.enumerated() {
             let previousSeasons = Array(seasons.prefix(index))

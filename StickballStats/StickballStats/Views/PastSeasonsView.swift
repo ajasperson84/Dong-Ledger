@@ -24,8 +24,8 @@ struct PastSeasonsView: View {
                             .neonGlow(color: TronColors.cyan, radius: 8)
                             .padding(.top, 16)
 
-                        // Season cards - filter out season 8 (current season)
-                        ForEach(HistoricalData.seasons.filter { $0.seasonNumber < 8 }.reversed()) { season in
+                        // Season cards (current season is excluded)
+                        ForEach(HistoricalData.pastSeasons.reversed()) { season in
                             SeasonCard(season: season)
                                 .onTapGesture {
                                     selectedSeason = season

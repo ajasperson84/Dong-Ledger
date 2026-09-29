@@ -12,6 +12,7 @@ struct WeeklyStats: Identifiable, Codable, Hashable {
     var playerName: String  // Denormalized for easier display
     var weekNumber: Int
     var year: Int
+    var season: Int?  // nil for entries saved before seasons were tagged (Season 8)
     var dongs: Int
     var drops: Int
     var doublePlays: Int
@@ -25,6 +26,7 @@ struct WeeklyStats: Identifiable, Codable, Hashable {
         self.playerName = playerName
         self.weekNumber = weekNumber
         self.year = year
+        self.season = SeasonSchedule.shared.seasonNumber
         self.dongs = 0
         self.drops = 0
         self.doublePlays = 0
@@ -32,6 +34,11 @@ struct WeeklyStats: Identifiable, Codable, Hashable {
         self.wins = 0
         self.createdAt = Date()
         self.updatedAt = Date()
+    }
+
+    /// Season this entry belongs to; untagged entries are from Season 8
+    var seasonNumber: Int {
+        season ?? 8
     }
 
     // Helper to get week identifier
