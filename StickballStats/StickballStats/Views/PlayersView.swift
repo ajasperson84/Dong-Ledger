@@ -74,7 +74,8 @@ struct PlayersView: View {
                                 .foregroundColor(SRColors.gold)
                                 .padding(.top, 24)
                         } else {
-                            LazyVStack(spacing: 2) {
+                            // Negative spacing absorbs the transparent glow padding in the row art
+                            LazyVStack(spacing: -32) {
                                 ForEach(statsService.laPlayers) { player in
                                     playerRow(player, careerStats: careerStatsFor(player))
                                 }
@@ -193,23 +194,23 @@ struct PlayerManagementRow: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(player.name.uppercased())
-                            .font(SRFont.slab(size.height * 0.20))
+                            .font(SRFont.slab(size.height * 0.17))
                             .foregroundColor(SRColors.text)
                             .shadow(color: .black, radius: 1, x: 0, y: 1)
                         if let stats = careerStats {
                             Text("\(stats.totalDongs) CAREER DONGS • \(stats.seasonsPlayed) SEASONS")
-                                .font(SRFont.mono(size.height * 0.12))
+                                .font(SRFont.mono(size.height * 0.095))
                                 .foregroundColor(SRColors.gold)
                         } else if player.isPortland {
                             Text("PORTLAND CHAPTER")
-                                .font(SRFont.mono(size.height * 0.12))
+                                .font(SRFont.mono(size.height * 0.095))
                                 .foregroundColor(SRColors.pink)
                         }
                     }
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                    .frame(width: size.width * (isAdminMode ? 0.46 : 0.62), alignment: .leading)
-                    .offset(x: size.width * 0.22, y: size.height * 0.33)
+                    .frame(width: size.width * (isAdminMode ? 0.44 : 0.58), alignment: .leading)
+                    .offset(x: size.width * 0.22, y: size.height * 0.35)
                 }
                 .allowsHitTesting(false)
 

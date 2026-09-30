@@ -294,5 +294,19 @@ struct SRTabBar: View {
             .padding(.horizontal, 22)
         }
         .padding(.horizontal, 4)
+        .background(alignment: .bottom) {
+            // Fades content out behind the bar's ornaments and fills the home-indicator area
+            LinearGradient(
+                stops: [
+                    .init(color: .clear, location: 0),
+                    .init(color: .black.opacity(0.85), location: 0.35),
+                    .init(color: .black, location: 1)
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .padding(.top, -24)
+            .ignoresSafeArea(edges: .bottom)
+        }
     }
 }

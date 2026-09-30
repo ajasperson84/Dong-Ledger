@@ -128,7 +128,8 @@ struct LeaderboardView: View {
                             }
                             .padding(.horizontal, 12)
                         } else {
-                            LazyVStack(spacing: 4) {
+                            // Negative spacing absorbs the transparent glow padding in the row art
+                            LazyVStack(spacing: -22) {
                                 ForEach(Array(sortedStats.enumerated()), id: \.element.id) { index, stats in
                                     LeaderboardRow(
                                         stats: stats,

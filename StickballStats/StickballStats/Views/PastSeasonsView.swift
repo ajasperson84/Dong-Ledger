@@ -26,12 +26,15 @@ struct PastSeasonsView: View {
                             .padding(.bottom, 6)
                             .accessibilityLabel("Past Seasons")
 
-                        // Most recent season first (current season is excluded)
-                        ForEach(HistoricalData.pastSeasons.reversed()) { season in
-                            Button(action: { selectedSeason = season }) {
-                                SeasonCard(season: season)
+                        // Most recent season first (current season is excluded).
+                        // Negative spacing absorbs the transparent glow padding in the row art.
+                        VStack(spacing: -30) {
+                            ForEach(HistoricalData.pastSeasons.reversed()) { season in
+                                Button(action: { selectedSeason = season }) {
+                                    SeasonCard(season: season)
+                                }
+                                .buttonStyle(SeasonRowButtonStyle())
                             }
-                            .buttonStyle(SeasonRowButtonStyle())
                         }
                         .padding(.horizontal, 8)
 
@@ -77,12 +80,12 @@ struct SeasonCard: View {
 
                 VStack(alignment: .leading, spacing: 1) {
                     Text("SEASON \(season.seasonNumber)")
-                        .font(SRFont.slab(size.height * 0.20))
+                        .font(SRFont.slab(size.height * 0.165))
                         .foregroundStyle(
                             LinearGradient(colors: [.white, Color(white: 0.75), .white], startPoint: .top, endPoint: .bottom)
                         )
                     Text(season.seasonName.uppercased())
-                        .font(SRFont.mono(size.height * 0.12))
+                        .font(SRFont.mono(size.height * 0.095))
                         .foregroundColor(SRColors.text)
                     if let top = topDonger {
                         HStack(spacing: 4) {
@@ -91,13 +94,13 @@ struct SeasonCard: View {
                             Text("\(top.playerName.uppercased()) (\(top.dongs))")
                                 .foregroundColor(SRColors.pink)
                         }
-                        .font(SRFont.mono(size.height * 0.12))
+                        .font(SRFont.mono(size.height * 0.095))
                     }
                 }
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)
-                .frame(width: size.width * 0.66, alignment: .leading)
-                .offset(x: size.width * 0.22, y: size.height * 0.27)
+                .frame(width: size.width * 0.60, alignment: .leading)
+                .offset(x: size.width * 0.22, y: size.height * 0.285)
             }
         }
         .accessibilityElement(children: .combine)
@@ -276,7 +279,7 @@ struct SeasonDetailView: View {
                             .foregroundColor(SRColors.gold)
                             .padding(.top, 24)
                     } else {
-                        LazyVStack(spacing: 4) {
+                        LazyVStack(spacing: -22) {
                             ForEach(Array(sortedStats.enumerated()), id: \.element.id) { index, stat in
                                 SRRankRow(rank: index + 1, name: stat.playerName, value: valueFor(stat))
                                     .accessibilityElement(children: .ignore)
