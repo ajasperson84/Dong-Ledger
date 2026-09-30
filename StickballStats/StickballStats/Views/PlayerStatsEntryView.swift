@@ -2,7 +2,7 @@
 //  PlayerStatsEntryView.swift
 //  StickballStats
 //
-//  Individual player stats entry view
+//  Individual player stats entry (Stickball Rich skin)
 //
 
 import SwiftUI
@@ -23,91 +23,85 @@ struct PlayerStatsEntryView: View {
     @State private var isSaving = false
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                TronGridBackground()
+        ZStack {
+            SRBackground()
 
-                VStack(spacing: 24) {
-                    // Player header
-                    VStack(spacing: 8) {
-                        Text(player.name.uppercased())
-                            .font(.system(size: 24, weight: .bold, design: .monospaced))
-                            .foregroundColor(TronColors.cyan)
-                            .neonGlow(color: TronColors.cyan, radius: 10)
-
-                        Text("WEEK \(statsService.currentWeek), \(statsService.currentYear)")
-                            .font(.system(size: 14, weight: .medium, design: .monospaced))
-                            .foregroundColor(TronColors.secondaryText)
+            ScrollView {
+                VStack(spacing: 12) {
+                    // Player name and week on the header plaque
+                    SRArtPlate("SR_Player_Header_Plaque_Blank") { size in
+                        ZStack {
+                            Text(player.name.uppercased())
+                                .font(SRFont.display(size.height * 0.20))
+                                .foregroundColor(SRColors.text)
+                                .shadow(color: .black, radius: 1, x: 0, y: 1)
+                                .frame(width: size.width * 0.72)
+                                .position(x: size.width * 0.5, y: size.height * 0.35)
+                            Text(detailLine)
+                                .font(SRFont.display(size.height * 0.09))
+                                .srGoldText()
+                                .frame(width: size.width * 0.66)
+                                .position(x: size.width * 0.5, y: size.height * 0.655)
+                        }
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
                     }
-                    .padding(.top, 20)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 24)
 
                     if isLoading {
                         ProgressView()
-                            .tint(TronColors.cyan)
+                            .tint(SRColors.gold)
                             .scaleEffect(1.5)
-                            .frame(maxHeight: .infinity)
+                            .padding(.top, 40)
                     } else {
-                        // Stats entry grid
-                        VStack(spacing: 20) {
-                            HStack(spacing: 30) {
-                                StatCounter(title: "Dongs", value: $dongs, color: TronColors.cyan)
-                                StatCounter(title: "Drops", value: $drops, color: TronColors.orange)
-                            }
+                        StatEditorPanel(
+                            dongs: $dongs,
+                            drops: $drops,
+                            doublePlays: $doublePlays,
+                            salamies: $salamies,
+                            wins: $wins
+                        )
+                        .padding(.horizontal, 14)
 
-                            HStack(spacing: 30) {
-                                StatCounter(title: "Double Plays", value: $doublePlays, color: TronColors.magenta)
-                                StatCounter(title: "Salamies", value: $salamies, color: TronColors.green)
-                            }
-
-                            StatCounter(title: "Wins", value: $wins, color: TronColors.yellow)
-                        }
-                        .padding(24)
-                        .background(TronColors.cardBackground)
-                        .cornerRadius(16)
-                        .neonBorder(color: TronColors.cyan.opacity(0.5))
-                        .padding(.horizontal, 16)
-
-                        Spacer()
-
-                        // Save button
+                        // Save / Cancel
                         Button(action: saveStats) {
-                            HStack {
-                                if isSaving {
-                                    ProgressView()
-                                        .tint(TronColors.darkBackground)
-                                        .scaleEffect(0.8)
-                                } else {
-                                    Image(systemName: "checkmark.circle")
-                                    Text("SAVE STATS")
-                                }
+                            if isSaving {
+                                ProgressView().tint(.white)
+                            } else {
+                                Color.clear
                             }
-                            .font(.system(size: 16, weight: .bold, design: .monospaced))
-                            .foregroundColor(TronColors.darkBackground)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(TronColors.cyan)
-                            .cornerRadius(12)
-                            .neonGlow(color: TronColors.cyan, radius: 10)
                         }
-                        .disabled(isSaving)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 20)
+                        .buttonStyle(.srImage("Save_Stats_Button"))
+                        .padding(.horizontal, 24)
+                        .disabled(isSaving || stats == nil)
+                        .accessibilityLabel("Save stats")
+
+                        Button(action: { dismiss() }) { Color.clear }
+                            .buttonStyle(.srImage("Cancel_Button"))
+                            .frame(width: 150, height: 60)
+                            .accessibilityLabel("Cancel")
                     }
                 }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .foregroundColor(TronColors.orange)
-                }
-            }
-            .task {
-                await loadStats()
+                .padding(.bottom, 24)
             }
         }
+        .task {
+            await loadStats()
+        }
+    }
+
+    /// "SATURDAY · SEP 26 · WEEK 4 · THE AIRFIELD"
+    private var detailLine: String {
+        var parts: [String] = []
+        if let gameWeek = statsService.currentGameWeek {
+            parts.append(gameWeek.dayTitle)
+        }
+        parts.append("WEEK \(statsService.currentWeekNumber)")
+        if let field = statsService.getFieldForWeek(statsService.currentWeekNumber) {
+            parts.append(field.rawValue.uppercased())
+        }
+        return parts.joined(separator: " · ")
     }
 
     private func loadStats() async {

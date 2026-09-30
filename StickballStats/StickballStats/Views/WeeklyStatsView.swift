@@ -62,150 +62,49 @@ struct WeeklyStatsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                TronGridBackground()
+                SRBackground()
 
-                VStack(spacing: 0) {
-                    // Header with week navigation
-                    WeekNavigationHeader()
-                        .environmentObject(statsService)
-                        .environmentObject(adminService)
+                ScrollView {
+                    VStack(spacing: 8) {
+                        weeklyHeader
 
-                    // Content based on state
-                    if let gameWeek = statsService.currentGameWeek, gameWeek.isBlockedOut {
-                        BlockedOutWeekView(gameWeek: gameWeek)
-                    } else if statsService.isViewingFutureWeek, let gameWeek = statsService.currentGameWeek {
-                        UpcomingWeekView(gameWeek: gameWeek)
+                        WeekNavigationHeader(onShowSchedule: { showingSchedule = true })
                             .environmentObject(statsService)
-                    } else if statsService.players.isEmpty {
-                        EmptyStateView(
-                            icon: "person.badge.plus",
-                            title: "NO PLAYERS",
-                            message: "Add players in the Players tab to start tracking stats"
-                        )
-                    } else if playersThisWeek.isEmpty {
-                        // No players selected for this week yet
-                        VStack(spacing: 20) {
-                            Spacer()
+                            .environmentObject(adminService)
 
-                            Image(systemName: "person.3.sequence")
-                                .font(.system(size: 56))
-                                .foregroundColor(TronColors.cyan.opacity(0.5))
-
-                            Text("NO PLAYERS ADDED")
-                                .font(.system(size: 18, weight: .bold, design: .monospaced))
-                                .foregroundColor(TronColors.secondaryText)
-
-                            Text("Select who played this week")
-                                .font(.system(size: 12, design: .monospaced))
-                                .foregroundColor(TronColors.dimText)
-
-                            if adminService.isAdminMode {
-                                Button(action: { showingPlayerSelection = true }) {
-                                    HStack {
-                                        Image(systemName: "plus.circle.fill")
-                                        Text("ADD PLAYERS")
-                                    }
-                                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                    .foregroundColor(TronColors.darkBackground)
-                                    .padding(.horizontal, 24)
-                                    .padding(.vertical, 14)
-                                    .background(TronColors.green)
-                                    .cornerRadius(10)
-                                    .neonGlow(color: TronColors.green, radius: 8)
-                                }
-                                .padding(.top, 8)
-                            } else {
-                                Text("Admin mode required to add players")
-                                    .font(.system(size: 10, design: .monospaced))
-                                    .foregroundColor(TronColors.dimText)
-                                    .padding(.top, 8)
-                            }
-
-                            Spacer()
-                        }
-                    } else {
-                        // Show players with their stats
-                        ScrollView {
-                            VStack(spacing: 12) {
-                                // Weekly totals summary bar
-                                WeeklyTotalsSummary(
-                                    dongs: weeklyTotals.dongs,
-                                    drops: weeklyTotals.drops,
-                                    doublePlays: weeklyTotals.doublePlays,
-                                    salamies: weeklyTotals.salamies
-                                )
-                                .padding(.horizontal, 12)
-
-                                // Player of the Week
-                                if let potw = playerOfTheWeek {
-                                    PlayerOfTheWeekCard(
-                                        playerName: potw.player.name,
-                                        dongs: potw.dongs,
-                                        doublePlays: potw.doublePlays,
-                                        wins: potw.wins,
-                                        drops: potw.drops
-                                    )
+                        // Content based on state
+                        if let gameWeek = statsService.currentGameWeek, gameWeek.isBlockedOut {
+                            BlockedOutWeekView(gameWeek: gameWeek)
+                                .padding(.vertical, 24)
+                        } else if statsService.isViewingFutureWeek, let gameWeek = statsService.currentGameWeek {
+                            UpcomingWeekView(gameWeek: gameWeek)
+                                .environmentObject(statsService)
+                                .padding(.vertical, 24)
+                        } else if playersThisWeek.isEmpty {
+                            noPlayersYet
+                        } else {
+                            // Top Baller (player of the week)
+                            if let potw = playerOfTheWeek {
+                                TopBallerCallout(playerName: potw.player.name)
                                     .padding(.horizontal, 12)
-                                }
-
-                                LazyVStack(spacing: 6) {
-                                    ForEach(playersThisWeek) { player in
-                                        if let stats = currentWeekStats(for: player) {
-                                            WeeklyStatRow(
-                                                player: player,
-                                                stats: stats,
-                                                isAdminMode: adminService.isAdminMode,
-                                                onTap: {
-                                                    if adminService.isAdminMode {
-                                                        selectedPlayer = player
-                                                    }
-                                                }
-                                            )
-                                        }
-                                    }
-                                }
-                                .padding(.horizontal, 12)
                             }
-                            .padding(.vertical, 12)
+
+                            WeeklyStatsTable(
+                                rows: playersThisWeek.compactMap { player in
+                                    currentWeekStats(for: player).map { WeeklyTableRow(player: player, stats: $0) }
+                                },
+                                isAdminMode: adminService.isAdminMode,
+                                onSelect: { selectedPlayer = $0 }
+                            )
+                            .padding(.horizontal, 10)
                         }
+
+                        SRFooterLogo()
                     }
+                    .padding(.bottom, 12)
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("WEEKLY STATS")
-                        .font(.system(size: 16, weight: .bold, design: .monospaced))
-                        .foregroundColor(TronColors.cyan)
-                }
-
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { showingSchedule = true }) {
-                        Image(systemName: "calendar")
-                            .foregroundColor(TronColors.cyan)
-                    }
-                }
-
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if adminService.isAdminMode && statsService.canEnterStatsForCurrentWeek {
-                        HStack(spacing: 12) {
-                            // Add/edit players for week
-                            Button(action: { showingPlayerSelection = true }) {
-                                Image(systemName: "person.badge.plus")
-                                    .foregroundColor(TronColors.green)
-                            }
-
-                            // Batch edit stats
-                            if !playersThisWeek.isEmpty {
-                                Button(action: { showingBatchEntry = true }) {
-                                    Image(systemName: "square.and.pencil")
-                                        .foregroundColor(TronColors.cyan)
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showingPlayerSelection) {
                 WeeklyPlayerSelectionView()
                     .environmentObject(statsService)
@@ -225,6 +124,55 @@ struct WeeklyStatsView: View {
         }
     }
 
+    private var showsAdminButtons: Bool {
+        adminService.isAdminMode && statsService.canEnterStatsForCurrentWeek
+    }
+
+    /// Title and WEEKLY banner, flanked by the admin add-players and edit-week buttons
+    private var weeklyHeader: some View {
+        SRHeader(banner: "SR_Weekly_Banner", bannerWidth: 0.62)
+            .overlay(alignment: .bottom) {
+                if showsAdminButtons {
+                    HStack {
+                        Button(action: { showingPlayerSelection = true }) {
+                            Color.clear
+                        }
+                        .buttonStyle(.srImage("Add_Player_Icon_Button"))
+                        .frame(width: 62, height: 62)
+                        .accessibilityLabel("Add players for this week")
+
+                        Spacer()
+
+                        if !playersThisWeek.isEmpty {
+                            Button(action: { showingBatchEntry = true }) {
+                                Color.clear
+                            }
+                            .buttonStyle(.srImage("Edit_Week_Icon_Button"))
+                            .frame(width: 62, height: 62)
+                            .accessibilityLabel("Edit this week's stats")
+                        }
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.bottom, 8)
+                }
+            }
+    }
+
+    private var noPlayersYet: some View {
+        SRArtPlate("SR_Player_Row_Empty") { _ in
+            VStack(spacing: 4) {
+                Text("NO PLAYERS ADDED")
+                    .font(SRFont.display(18))
+                    .foregroundColor(SRColors.text)
+                Text(adminService.isAdminMode ? "Tap + to select who played" : "Admin mode required to add players")
+                    .font(SRFont.mono(11))
+                    .foregroundColor(SRColors.gold)
+            }
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+    }
+
     private func currentWeekStats(for player: Player) -> WeeklyStats? {
         guard let playerId = player.id else { return nil }
         return statsService.weeklyStats.first {
@@ -236,70 +184,112 @@ struct WeeklyStatsView: View {
     }
 }
 
-// MARK: - Weekly Stat Row (Compact with short names)
-struct WeeklyStatRow: View {
-    let player: Player
-    let stats: WeeklyStats
-    var isAdminMode: Bool = true
-    let onTap: () -> Void
+// MARK: - Top Baller Callout
+/// Player of the week on the TOP BALLER plaque
+struct TopBallerCallout: View {
+    let playerName: String
 
     var body: some View {
-        Button(action: onTap) {
-            HStack(spacing: 8) {
-                // Player name
-                Text(player.name.shortName)
-                    .font(.system(size: 15, weight: .bold, design: .monospaced))
-                    .foregroundColor(TronColors.cyan)
-                    .frame(width: 64, alignment: .leading)
-                    .lineLimit(1)
-
-                // Stats in a row - spread across the screen
-                HStack(spacing: 0) {
-                    CompactStatBadge(value: stats.dongs, label: "D", color: TronColors.cyan)
-                    CompactStatBadge(value: stats.drops, label: "R", color: TronColors.orange)
-                    CompactStatBadge(value: stats.doublePlays, label: "DP", color: TronColors.magenta)
-                    CompactStatBadge(value: stats.salamies, label: "S", color: TronColors.green)
-                    CompactStatBadge(value: stats.wins, label: "W", color: TronColors.yellow)
-                }
-
-                // Only show edit chevron in admin mode
-                if isAdminMode {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 10))
-                        .foregroundColor(TronColors.dimText)
-                }
-            }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 10)
-            .background(TronColors.cardBackground)
-            .cornerRadius(8)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(TronColors.gridLine.opacity(0.3), lineWidth: 1)
-            )
+        SRArtPlate("SR_Top_Baller_Callout_Blank") { size in
+            Text(playerName.uppercased())
+                .font(SRFont.display(size.height * 0.24))
+                .foregroundStyle(
+                    LinearGradient(colors: [.white, Color(white: 0.78), .white], startPoint: .top, endPoint: .bottom)
+                )
+                .shadow(color: .black, radius: 1, x: 0, y: 1)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .frame(width: size.width * 0.66)
+                .position(x: size.width * 0.57, y: size.height * 0.60)
         }
-        .buttonStyle(.plain)
-        .disabled(!isAdminMode)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Top baller: \(playerName)")
     }
 }
 
-// MARK: - Compact Stat Badge
-struct CompactStatBadge: View {
-    let value: Int
-    let label: String
-    let color: Color
+// MARK: - Weekly Stats Table
+struct WeeklyTableRow: Identifiable {
+    let player: Player
+    let stats: WeeklyStats
+    var id: String { player.id ?? stats.playerId }
+}
+
+/// Gold-ruled table of this week's stats (Dongs, Drops, Double Plays, Salamies, Wins)
+struct WeeklyStatsTable: View {
+    let rows: [WeeklyTableRow]
+    let isAdminMode: Bool
+    let onSelect: (Player) -> Void
+
+    private let nameWidth: CGFloat = 0.30
+    private static let columns = ["DONGS", "DROPS", "DBL PLAY", "SALAMIES", "WINS"]
 
     var body: some View {
-        VStack(spacing: 2) {
-            Text("\(value)")
-                .font(.system(size: 18, weight: .bold, design: .monospaced))
-                .foregroundColor(value > 0 ? color : TronColors.dimText)
+        GeometryReader { geo in
+            let nameColumn = geo.size.width * nameWidth
+            VStack(spacing: 0) {
+                // Header
+                HStack(spacing: 0) {
+                    Text("PLAYER")
+                        .frame(width: nameColumn)
+                    ForEach(Self.columns, id: \.self) { title in
+                        goldDivider
+                        Text(title)
+                            .frame(maxWidth: .infinity)
+                    }
+                }
+                .font(SRFont.display(12))
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .srGoldText()
+                .frame(height: 34)
 
-            Text(label)
-                .font(.system(size: 9, weight: .medium, design: .monospaced))
-                .foregroundColor(color.opacity(0.6))
+                ForEach(rows) { row in
+                    goldRule
+                    Button(action: { onSelect(row.player) }) {
+                        HStack(spacing: 0) {
+                            Text(row.player.name.uppercased())
+                                .font(SRFont.display(15))
+                                .foregroundColor(SRColors.text)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.55)
+                                .frame(width: nameColumn - 8, alignment: .leading)
+                                .padding(.leading, 8)
+                            ForEach(values(for: row.stats), id: \.offset) { item in
+                                goldDivider
+                                Text("\(item.element)")
+                                    .font(SRFont.display(18))
+                                    .foregroundColor(item.element > 0 ? SRColors.text : SRColors.text.opacity(0.45))
+                                    .frame(maxWidth: .infinity)
+                            }
+                        }
+                        .frame(height: 36)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(!isAdminMode)
+                    .accessibilityLabel("\(row.player.name): \(row.stats.dongs) dongs, \(row.stats.drops) drops, \(row.stats.doublePlays) double plays, \(row.stats.salamies) salamies, \(row.stats.wins) wins")
+                }
+            }
         }
-        .frame(maxWidth: .infinity)
+        .frame(height: 34 + CGFloat(rows.count) * 37)
+        .srPlate(glow: SRColors.purple, cornerRadius: 6)
+    }
+
+    private func values(for stats: WeeklyStats) -> [(offset: Int, element: Int)] {
+        Array([stats.dongs, stats.drops, stats.doublePlays, stats.salamies, stats.wins].enumerated())
+            .map { (offset: $0.offset, element: $0.element) }
+    }
+
+    private var goldDivider: some View {
+        Rectangle()
+            .fill(SRColors.goldGradient)
+            .frame(width: 1.5)
+    }
+
+    private var goldRule: some View {
+        Rectangle()
+            .fill(SRColors.goldGradient)
+            .frame(height: 1)
     }
 }
 
@@ -307,94 +297,87 @@ struct CompactStatBadge: View {
 struct WeekNavigationHeader: View {
     @EnvironmentObject var statsService: StatsService
     @EnvironmentObject var adminService: AdminService
+    var onShowSchedule: () -> Void = {}
     @State private var showingFieldPicker = false
 
     var body: some View {
-        VStack(spacing: 8) {
-            // Main navigation row
-            HStack {
-                Button(action: { statsService.previousWeek() }) {
-                    Image(systemName: "chevron.left")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(statsService.canGoPrevious() ? TronColors.cyan : TronColors.dimText)
-                        .frame(width: 44, height: 44)
-                }
-                .disabled(!statsService.canGoPrevious())
-
-                Spacer()
-
-                VStack(spacing: 4) {
-                    // Special event name or Week number
-                    if let gameWeek = statsService.currentGameWeek {
-                        if let event = gameWeek.specialEvent {
-                            Text(event.rawValue.uppercased())
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                .foregroundColor(TronColors.magenta)
-                                .neonGlow(color: TronColors.magenta, radius: 5)
-
-                            if let subtitle = event.subtitle {
-                                Text(subtitle.uppercased())
-                                    .font(.system(size: 9, weight: .medium, design: .monospaced))
-                                    .foregroundColor(TronColors.magenta.opacity(0.8))
-                                    .multilineTextAlignment(.center)
-                            }
-                        }
-
-                        if !gameWeek.isBlockedOut {
-                            Text("WEEK \(statsService.currentWeekNumber)")
-                                .font(.system(size: gameWeek.specialEvent != nil ? 16 : 24, weight: .bold, design: .monospaced))
-                                .foregroundColor(TronColors.cyan)
-                                .neonGlow(color: TronColors.cyan, radius: gameWeek.specialEvent != nil ? 4 : 8)
-                        }
-
-                        // Date
-                        HStack(spacing: 6) {
-                            Text(gameWeek.formattedDate.uppercased())
-                                .font(.system(size: 11, weight: .medium, design: .monospaced))
-                                .foregroundColor(TronColors.secondaryText)
-
-                            if statsService.isViewingFutureWeek {
-                                Text("UPCOMING")
-                                    .font(.system(size: 9, weight: .bold, design: .monospaced))
-                                    .foregroundColor(TronColors.yellow)
-                            }
-                        }
-                    } else {
-                        Text("WEEK \(statsService.currentWeekNumber)")
-                            .font(.system(size: 24, weight: .bold, design: .monospaced))
-                            .foregroundColor(TronColors.cyan)
-                            .neonGlow(color: TronColors.cyan, radius: 8)
+        VStack(spacing: 6) {
+            // Special event name
+            if let event = statsService.currentGameWeek?.specialEvent {
+                VStack(spacing: 2) {
+                    Text(event.rawValue.uppercased())
+                        .font(SRFont.display(18))
+                        .srGoldText()
+                    if let subtitle = event.subtitle {
+                        Text(subtitle.uppercased())
+                            .font(SRFont.mono(10))
+                            .foregroundColor(SRColors.pink)
+                            .multilineTextAlignment(.center)
                     }
                 }
-
-                Spacer()
-
-                Button(action: { statsService.nextWeek() }) {
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 20, weight: .bold))
-                        .foregroundColor(statsService.canGoNext() ? TronColors.cyan : TronColors.dimText)
-                        .frame(width: 44, height: 44)
-                }
-                .disabled(!statsService.canGoNext())
+                .padding(.horizontal, 16)
             }
 
-            // Field selector button (read-only for non-admins)
-            if !(statsService.currentGameWeek?.isBlockedOut ?? false) {
-                HStack(spacing: 8) {
-                    FieldSelectorButton(
-                        weekNumber: statsService.currentWeekNumber,
-                        isAdminMode: adminService.isAdminMode,
-                        onTap: { showingFieldPicker = true }
-                    )
-                    .environmentObject(statsService)
+            // Arrows and date panel
+            HStack(spacing: 4) {
+                Button(action: { statsService.previousWeek() }) { Color.clear }
+                    .buttonStyle(.srImage("Week_Arrow_Left"))
+                    .frame(width: 58, height: 58)
+                    .opacity(statsService.canGoPrevious() ? 1 : 0.4)
+                    .disabled(!statsService.canGoPrevious())
+                    .accessibilityLabel("Previous week")
 
-                    if statsService.gameWeekInfos[statsService.currentWeekNumber]?.gameField?.isNightGame ?? false {
-                        NightGameBadge()
+                Button(action: onShowSchedule) {
+                    SRArtPlate("SR_Weekly_Date_Panel_Blank") { size in
+                        VStack(spacing: 0) {
+                            Text(statsService.currentGameWeek?.dayTitle ?? "")
+                                .font(SRFont.display(size.height * 0.24))
+                                .foregroundColor(SRColors.text)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
+                            HStack(spacing: 6) {
+                                if !(statsService.currentGameWeek?.isBlockedOut ?? false) {
+                                    Text("WEEK \(statsService.currentWeekNumber)")
+                                }
+                                if statsService.isViewingFutureWeek {
+                                    Text("· UPCOMING")
+                                }
+                            }
+                            .font(SRFont.display(size.height * 0.15))
+                            .srGoldText()
+                        }
+                        .padding(.horizontal, size.width * 0.08)
                     }
                 }
+                .buttonStyle(.plain)
+                .accessibilityHint("Shows the season schedule")
+
+                Button(action: { statsService.nextWeek() }) { Color.clear }
+                    .buttonStyle(.srImage("Week_Arrow_Right"))
+                    .frame(width: 58, height: 58)
+                    .opacity(statsService.canGoNext() ? 1 : 0.4)
+                    .disabled(!statsService.canGoNext())
+                    .accessibilityLabel("Next week")
+            }
+            .padding(.horizontal, 8)
+
+            // Field plate (tappable for admins) with night game badge
+            if !(statsService.currentGameWeek?.isBlockedOut ?? false) {
+                FieldSelectorButton(
+                    weekNumber: statsService.currentWeekNumber,
+                    isAdminMode: adminService.isAdminMode,
+                    isOpen: showingFieldPicker,
+                    onTap: { showingFieldPicker = true }
+                )
+                .environmentObject(statsService)
+                .padding(.horizontal, 12)
                 .sheet(isPresented: $showingFieldPicker) {
                     FieldPickerSheet(weekNumber: statsService.currentWeekNumber)
                         .environmentObject(statsService)
+                }
+
+                if statsService.gameWeekInfos[statsService.currentWeekNumber]?.gameField?.isNightGame ?? false {
+                    NightGameBadge()
                 }
             }
 
@@ -402,14 +385,12 @@ struct WeekNavigationHeader: View {
             if statsService.currentWeekIndex != statsService.schedule.currentWeekIndex() {
                 Button(action: { statsService.goToCurrentWeek() }) {
                     Text("BACK TO THIS WEEK")
-                        .font(.system(size: 9, weight: .bold, design: .monospaced))
-                        .foregroundColor(TronColors.cyan.opacity(0.8))
+                        .font(SRFont.mono(11))
+                        .foregroundColor(SRColors.pink)
+                        .underline()
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(TronColors.cardBackground.opacity(0.8))
     }
 }
 
@@ -418,15 +399,11 @@ struct FieldSelectorButton: View {
     @EnvironmentObject var statsService: StatsService
     let weekNumber: Int
     var isAdminMode: Bool = true
+    var isOpen: Bool = false
     let onTap: () -> Void
 
     var currentField: GameField? {
         statsService.gameWeekInfos[weekNumber]?.gameField
-    }
-
-    var fieldIcon: String {
-        guard let field = currentField else { return "mappin.circle" }
-        return field.icon
     }
 
     var body: some View {
@@ -434,31 +411,37 @@ struct FieldSelectorButton: View {
         let _ = statsService.lastFieldUpdate
 
         Button(action: onTap) {
-            HStack(spacing: 6) {
-                Image(systemName: fieldIcon)
-                    .font(.system(size: 12))
-                if let field = currentField {
-                    Text(field.rawValue.uppercased())
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                } else {
-                    Text("NO FIELD SET")
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+            SRArtPlate(isOpen ? "SR_Weekly_Field_Selector_Selected" : "SR_Weekly_Field_Selector_Unselected") { size in
+                ZStack {
+                    HStack(spacing: 8) {
+                        if let field = currentField {
+                            Image(systemName: field.icon)
+                                .font(.system(size: size.height * 0.22))
+                                .srGoldText()
+                        }
+                        Text(currentField?.rawValue.uppercased() ?? "NO FIELD SET")
+                            .font(SRFont.display(size.height * 0.26))
+                            .foregroundColor(currentField != nil ? SRColors.text : SRColors.gold.opacity(0.7))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.6)
+                    }
+
+                    // Chevron only for admins; read-only plate otherwise
+                    if isAdminMode {
+                        HStack {
+                            Spacer()
+                            Image(isOpen ? "SR_Field_Chevron_Up" : "SR_Field_Chevron_Down")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: size.height * 0.36)
+                        }
+                        .padding(.trailing, size.width * 0.07)
+                    }
                 }
-                if isAdminMode {
-                    Image(systemName: "chevron.down")
-                        .font(.system(size: 9))
-                }
+                .padding(.horizontal, size.width * 0.08)
             }
-            .foregroundColor(currentField != nil ? TronColors.green : TronColors.dimText)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(TronColors.surfaceBackground)
-            .cornerRadius(6)
-            .overlay(
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(currentField != nil ? TronColors.green.opacity(0.5) : TronColors.gridLine.opacity(0.3), lineWidth: 1)
-            )
         }
+        .buttonStyle(.plain)
         .disabled(!isAdminMode)
     }
 }

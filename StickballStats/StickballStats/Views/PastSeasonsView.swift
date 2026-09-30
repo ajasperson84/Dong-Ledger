@@ -2,7 +2,7 @@
 //  PastSeasonsView.swift
 //  Dong Country Ledger 5000
 //
-//  Browse historical season totals
+//  Browse historical season totals (Stickball Rich skin)
 //
 
 import SwiftUI
@@ -13,30 +13,27 @@ struct PastSeasonsView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                TronGridBackground()
+                SRBackground()
 
                 ScrollView {
-                    VStack(spacing: 12) {
-                        // Header
-                        Text("PAST SEASONS")
-                            .font(.system(size: 24, weight: .bold, design: .monospaced))
-                            .foregroundColor(TronColors.cyan)
-                            .neonGlow(color: TronColors.cyan, radius: 8)
-                            .padding(.top, 16)
+                    VStack(spacing: 6) {
+                        SRHeader(banner: "SR_Past_Seasons_Banner", bannerWidth: 0.9)
 
-                        // Season cards (current season is excluded)
+                        // Most recent season first (current season is excluded)
                         ForEach(HistoricalData.pastSeasons.reversed()) { season in
-                            SeasonCard(season: season)
-                                .onTapGesture {
-                                    selectedSeason = season
-                                }
+                            Button(action: { selectedSeason = season }) {
+                                SeasonCard(season: season)
+                            }
+                            .buttonStyle(SeasonRowButtonStyle())
                         }
+                        .padding(.horizontal, 8)
+
+                        SRFooterLogo()
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 20)
+                    .padding(.bottom, 12)
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(item: $selectedSeason) { season in
                 SeasonDetailView(season: season)
             }
@@ -44,7 +41,19 @@ struct PastSeasonsView: View {
     }
 }
 
+// MARK: - Season Row Button Style
+/// Archive row art that lights up while pressed
+struct SeasonRowButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Image(configuration.isPressed ? "SR_Past_Season_Row_Selected" : "SR_Past_Season_Row_Unselected")
+            .resizable()
+            .aspectRatio(contentMode: .fit)
+            .overlay(configuration.label)
+    }
+}
+
 // MARK: - Season Card
+/// Text laid over the archive row: medallion number, title, subtitle and dong leader
 struct SeasonCard: View {
     let season: HistoricalSeasonStats
 
@@ -53,47 +62,38 @@ struct SeasonCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
+        GeometryReader { geo in
+            let size = geo.size
+            ZStack(alignment: .topLeading) {
+                DiamondNumber(value: season.seasonNumber, height: size.height * 0.44)
+                    .position(x: size.width * 0.121, y: size.height * 0.505)
+
+                VStack(alignment: .leading, spacing: 1) {
                     Text("SEASON \(season.seasonNumber)")
-                        .font(.system(size: 18, weight: .bold, design: .monospaced))
-                        .foregroundColor(TronColors.cyan)
-
+                        .font(SRFont.slab(size.height * 0.20))
+                        .foregroundStyle(
+                            LinearGradient(colors: [.white, Color(white: 0.75), .white], startPoint: .top, endPoint: .bottom)
+                        )
                     Text(season.seasonName.uppercased())
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
-                        .foregroundColor(TronColors.secondaryText)
+                        .font(SRFont.mono(size.height * 0.12))
+                        .foregroundColor(SRColors.text)
+                    if let top = topDonger {
+                        HStack(spacing: 4) {
+                            Text("DONG LEADER:")
+                                .foregroundColor(SRColors.gold)
+                            Text("\(top.playerName.uppercased()) (\(top.dongs))")
+                                .foregroundColor(SRColors.pink)
+                        }
+                        .font(SRFont.mono(size.height * 0.12))
+                    }
                 }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .foregroundColor(TronColors.dimText)
-            }
-
-            if let top = topDonger {
-                HStack {
-                    Text("DONG LEADER:")
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundColor(TronColors.dimText)
-
-                    Text(top.playerName.uppercased())
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .foregroundColor(TronColors.green)
-
-                    Text("(\(top.dongs))")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        .foregroundColor(TronColors.green)
-                }
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
+                .frame(width: size.width * 0.66, alignment: .leading)
+                .offset(x: size.width * 0.22, y: size.height * 0.27)
             }
         }
-        .padding(16)
-        .background(TronColors.cardBackground)
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(TronColors.gridLine.opacity(0.3), lineWidth: 1)
-        )
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -112,11 +112,53 @@ struct SeasonDetailView: View {
 
     enum StatCategory: String, CaseIterable {
         case dongs = "DONGS"
-        case drops = "DROPS"
-        case doublePlays = "DPs"
         case salamies = "SALAMIS"
         case wins = "WINS"
+        case drops = "DROPS"
+        case doublePlays = "DPs"
         case dongRobs = "ROBS"
+
+        var title: String {
+            switch self {
+            case .dongs: return "DONGS"
+            case .salamies: return "SALAMIES"
+            case .wins: return "WINS"
+            case .drops: return "DROPS"
+            case .doublePlays: return "DOUBLE PLAYS"
+            case .dongRobs: return "DONG ROBS"
+            }
+        }
+
+        /// Labeled category art; Dong Robs has no art so it uses the blank plate with text
+        @ViewBuilder
+        func buttonArt(isSelected: Bool) -> some View {
+            let state = isSelected ? "Selected" : "Unselected"
+            switch self {
+            case .dongRobs:
+                Image("SR_\(state)_Blank")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .overlay(
+                        Text("ROBS")
+                            .font(SRFont.slab(isSelected ? 20 : 16))
+                            .foregroundColor(SRColors.text)
+                    )
+            default:
+                Image("SR_\(state)_\(artName)")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+            }
+        }
+
+        private var artName: String {
+            switch self {
+            case .dongs: return "Dongs"
+            case .salamies: return "Salamies"
+            case .wins: return "Wins"
+            case .drops: return "Drops"
+            case .doublePlays, .dongRobs: return "Double_Plays"
+            }
+        }
 
         var color: Color {
             switch self {
@@ -159,102 +201,89 @@ struct SeasonDetailView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                TronGridBackground()
+        ZStack {
+            SRBackground()
 
-                VStack(spacing: 0) {
-                    // Header
-                    VStack(spacing: 4) {
-                        Text("SEASON \(season.seasonNumber)")
-                            .font(.system(size: 28, weight: .bold, design: .monospaced))
-                            .foregroundColor(TronColors.cyan)
-                            .neonGlow(color: TronColors.cyan, radius: 10)
-
-                        Text(season.seasonName.uppercased())
-                            .font(.system(size: 12, weight: .medium, design: .monospaced))
-                            .foregroundColor(TronColors.secondaryText)
+            ScrollView {
+                VStack(spacing: 10) {
+                    HStack {
+                        Button(action: { dismiss() }) { Color.clear }
+                            .buttonStyle(.srImage("Done_Button"))
+                            .frame(width: 104, height: 48)
+                            .accessibilityLabel("Done")
+                        Spacer()
                     }
-                    .padding(.vertical, 16)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 12)
 
-                    // Season Awards Button
-                    Button(action: { showingAwards = true }) {
-                        HStack {
-                            Image(systemName: "trophy.fill")
-                                .foregroundColor(TronColors.yellow)
-                            Text("SEASON AWARDS")
-                                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                                .foregroundColor(TronColors.yellow)
+                    // Season title plaque
+                    SRArtPlate("SR_Historic_Season_Header_Blank") { size in
+                        ZStack {
+                            Text("SEASON \(season.seasonNumber)")
+                                .font(SRFont.slab(size.height * 0.20))
+                                .foregroundColor(SRColors.text)
+                                .shadow(color: .black, radius: 1, x: 0, y: 1)
+                                .position(x: size.width * 0.5, y: size.height * 0.44)
+                            Text(season.seasonName.uppercased())
+                                .font(SRFont.display(size.height * 0.11))
+                                .srGoldText()
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
+                                .frame(width: size.width * 0.6)
+                                .position(x: size.width * 0.5, y: size.height * 0.825)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 8)
-                        .background(TronColors.yellow.opacity(0.1))
-                        .cornerRadius(8)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(TronColors.yellow.opacity(0.5), lineWidth: 1)
-                        )
                     }
-                    .padding(.bottom, 12)
+                    .padding(.horizontal, 10)
 
-                    // Category picker
+                    Button(action: { showingAwards = true }) { Color.clear }
+                        .buttonStyle(.srImage("Season_Awards_Button"))
+                        .padding(.horizontal, 48)
+                        .accessibilityLabel("Season awards")
+
+                    // Category buttons
                     ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
+                        HStack(spacing: 0) {
                             ForEach(StatCategory.allCases, id: \.self) { category in
-                                CategoryPill(
-                                    title: category.rawValue,
-                                    isSelected: selectedCategory == category,
-                                    color: category.color
-                                ) {
-                                    withAnimation(.easeInOut(duration: 0.2)) {
+                                let isSelected = selectedCategory == category
+                                Button(action: {
+                                    withAnimation(.easeInOut(duration: 0.15)) {
                                         selectedCategory = category
                                     }
+                                }) {
+                                    category.buttonArt(isSelected: isSelected)
+                                        .frame(height: isSelected ? 52 : 40)
                                 }
+                                .buttonStyle(.plain)
+                                .accessibilityLabel(category.title)
+                                .accessibilityAddTraits(isSelected ? .isSelected : [])
                             }
                         }
-                        .padding(.horizontal, 16)
+                        .frame(height: 56)
+                        .padding(.horizontal, 8)
                     }
-                    .padding(.bottom, 12)
 
                     // Stats list
                     if sortedStats.isEmpty {
-                        VStack {
-                            Spacer()
-                            Text("NO DATA")
-                                .font(.system(size: 16, weight: .bold, design: .monospaced))
-                                .foregroundColor(TronColors.dimText)
-                            Spacer()
-                        }
+                        Text("NO DATA")
+                            .font(SRFont.display(18))
+                            .foregroundColor(SRColors.gold)
+                            .padding(.top, 24)
                     } else {
-                        ScrollView {
-                            LazyVStack(spacing: 8) {
-                                ForEach(Array(sortedStats.enumerated()), id: \.element.id) { index, stat in
-                                    HistoricalStatRow(
-                                        playerName: stat.playerName,
-                                        value: valueFor(stat),
-                                        rank: index + 1,
-                                        color: selectedCategory.color
-                                    )
-                                }
+                        LazyVStack(spacing: 4) {
+                            ForEach(Array(sortedStats.enumerated()), id: \.element.id) { index, stat in
+                                SRRankRow(rank: index + 1, name: stat.playerName, value: valueFor(stat))
+                                    .accessibilityElement(children: .ignore)
+                                    .accessibilityLabel("\(index + 1). \(stat.playerName), \(valueFor(stat))")
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 20)
                         }
+                        .padding(.horizontal, 12)
                     }
                 }
+                .padding(.bottom, 24)
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                    .foregroundColor(TronColors.orange)
-                }
-            }
-            .sheet(isPresented: $showingAwards) {
-                SeasonAwardsView(awards: seasonAwards)
-            }
+        }
+        .sheet(isPresented: $showingAwards) {
+            SeasonAwardsView(awards: seasonAwards)
         }
     }
 }
@@ -265,77 +294,60 @@ struct SeasonAwardsView: View {
     @Environment(\.dismiss) var dismiss
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                TronGridBackground()
+        ZStack {
+            TronGridBackground()
 
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // Header
-                        VStack(spacing: 4) {
-                            Text("SEASON \(awards.seasonNumber)")
-                                .font(.system(size: 14, weight: .medium, design: .monospaced))
-                                .foregroundColor(TronColors.secondaryText)
-
-                            Text("AWARDS")
-                                .font(.system(size: 28, weight: .bold, design: .monospaced))
-                                .foregroundColor(TronColors.yellow)
-                                .neonGlow(color: TronColors.yellow, radius: 10)
-                        }
-                        .padding(.top, 20)
-
-                        // Dong King
-                        if let dongKing = awards.dongKing {
-                            AwardCard(
-                                title: "DONG KING",
-                                icon: "crown.fill",
-                                color: TronColors.cyan,
-                                playerName: dongKing,
-                                stat: "\(awards.dongKingTotal) DONGS"
-                            )
-                        }
-
-                        // MVP
-                        if let mvp = awards.mvp {
-                            AwardCard(
-                                title: "MVP",
-                                icon: "star.fill",
-                                color: TronColors.yellow,
-                                playerName: mvp,
-                                stat: "\(awards.mvpDongs) DONGS + \(awards.mvpWins) WINS"
-                            )
-                        }
-
-                        // Rookie of the Year
-                        if let rookie = awards.rookieOfYear {
-                            AwardCard(
-                                title: "ROOKIE OF THE YEAR",
-                                icon: "figure.child",
-                                color: TronColors.green,
-                                playerName: rookie,
-                                stat: "\(awards.rookieOfYearDongs) DONGS"
-                            )
-                        }
-
-                        if awards.dongKing == nil && awards.mvp == nil && awards.rookieOfYear == nil {
-                            Text("NO AWARDS DATA")
-                                .font(.system(size: 14, weight: .medium, design: .monospaced))
-                                .foregroundColor(TronColors.dimText)
-                                .padding(.top, 40)
-                        }
+            ScrollView {
+                VStack(spacing: 16) {
+                    HStack {
+                        Button(action: { dismiss() }) { Color.clear }
+                            .buttonStyle(.srImage("Done_Button"))
+                            .frame(width: 104, height: 48)
+                            .accessibilityLabel("Done")
+                        Spacer()
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 40)
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Done") {
-                        dismiss()
+
+                    VStack(spacing: 2) {
+                        Text("SEASON \(awards.seasonNumber)")
+                            .font(SRFont.display(16))
+                            .srGoldText()
+                        Text("AWARDS")
+                            .font(SRFont.slab(34))
+                            .foregroundColor(SRColors.text)
                     }
-                    .foregroundColor(TronColors.orange)
+
+                    if let dongKing = awards.dongKing {
+                        AwardCard(
+                            badge: "SR_Achievement_Dong_King",
+                            playerName: dongKing,
+                            stat: "\(awards.dongKingTotal) DONGS"
+                        )
+                    }
+
+                    if let mvp = awards.mvp {
+                        AwardCard(
+                            badge: "SR_Achievement_MVP",
+                            playerName: mvp,
+                            stat: "\(awards.mvpDongs) DONGS + \(awards.mvpWins) WINS"
+                        )
+                    }
+
+                    if let rookie = awards.rookieOfYear {
+                        AwardCard(
+                            badge: "SR_Achievement_Rookie_Of_The_Year",
+                            playerName: rookie,
+                            stat: "\(awards.rookieOfYearDongs) DONGS"
+                        )
+                    }
+
+                    if awards.dongKing == nil && awards.mvp == nil && awards.rookieOfYear == nil {
+                        Text("NO AWARDS DATA")
+                            .font(SRFont.display(16))
+                            .foregroundColor(SRColors.gold)
+                            .padding(.top, 40)
+                    }
                 }
+                .padding(16)
             }
         }
         .presentationDetents([.medium, .large])
@@ -343,54 +355,34 @@ struct SeasonAwardsView: View {
 }
 
 // MARK: - Award Card
+/// Achievement medallion art with the winner and their numbers
 struct AwardCard: View {
-    let title: String
-    let icon: String
-    let color: Color
+    let badge: String
     let playerName: String
     let stat: String
 
     var body: some View {
-        VStack(spacing: 12) {
-            // Award icon
-            ZStack {
-                Circle()
-                    .fill(color.opacity(0.2))
-                    .frame(width: 70, height: 70)
+        HStack(spacing: 14) {
+            Image(badge)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 96, height: 96)
 
-                Circle()
-                    .stroke(color, lineWidth: 3)
-                    .frame(width: 70, height: 70)
-
-                Image(systemName: icon)
-                    .font(.system(size: 28))
-                    .foregroundColor(color)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(playerName.uppercased())
+                    .font(SRFont.display(22))
+                    .foregroundColor(SRColors.text)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                Text(stat)
+                    .font(SRFont.mono(12))
+                    .foregroundColor(SRColors.gold)
             }
-            .neonGlow(color: color, radius: 10)
 
-            // Award title
-            Text(title)
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                .foregroundColor(color)
-
-            // Player name
-            Text(playerName.uppercased())
-                .font(.system(size: 20, weight: .bold, design: .monospaced))
-                .foregroundColor(TronColors.primaryText)
-
-            // Stat
-            Text(stat)
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                .foregroundColor(TronColors.secondaryText)
+            Spacer(minLength: 0)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 20)
-        .background(TronColors.cardBackground)
-        .cornerRadius(12)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(color.opacity(0.3), lineWidth: 1)
-        )
+        .padding(12)
+        .srPlate(glow: SRColors.purple)
     }
 }
 

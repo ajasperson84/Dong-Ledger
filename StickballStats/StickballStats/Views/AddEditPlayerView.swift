@@ -18,102 +18,110 @@ struct AddEditPlayerView: View {
     @State private var isSaving = false
     @State private var showingError = false
     @State private var errorMessage = ""
+    @FocusState private var isNameFocused: Bool
 
     var isEditing: Bool { player != nil }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                TronGridBackground()
+        ZStack {
+            TronGridBackground()
 
-                ScrollView {
-                    VStack(spacing: 24) {
-                        // Header
-                        VStack(spacing: 8) {
-                            Image(systemName: isEditing ? "person.circle" : "person.badge.plus")
-                                .font(.system(size: 48))
-                                .foregroundColor(TronColors.cyan)
-                                .neonGlow(color: TronColors.cyan, radius: 10)
-
-                            Text(isEditing ? "EDIT PLAYER" : "NEW PLAYER")
-                                .font(.system(size: 20, weight: .bold, design: .monospaced))
-                                .foregroundColor(TronColors.cyan)
-                        }
-                        .padding(.top, 20)
-
-                        // Form fields
-                        VStack(spacing: 20) {
-                            TronTextField(
-                                title: "PLAYER NAME",
-                                placeholder: "Enter name...",
-                                text: $name,
-                                color: TronColors.cyan
-                            )
-
-                            // Portland players only appear for the Coattail Classic
-                            Toggle(isOn: $isPortland) {
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text("PORTLAND CHAPTER")
-                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                        .foregroundColor(TronColors.magenta)
-                                    Text("Coattail Classic only · not in LA stats")
-                                        .font(.system(size: 10, design: .monospaced))
-                                        .foregroundColor(TronColors.dimText)
-                                }
-                            }
-                            .tint(TronColors.magenta)
-                        }
-                        .padding(.horizontal, 16)
-
-                        Spacer(minLength: 40)
-
-                        // Save button
-                        Button(action: savePlayer) {
-                            HStack {
-                                if isSaving {
-                                    ProgressView()
-                                        .tint(TronColors.darkBackground)
-                                        .scaleEffect(0.8)
-                                } else {
-                                    Image(systemName: isEditing ? "checkmark.circle" : "plus.circle")
-                                    Text(isEditing ? "SAVE CHANGES" : "ADD PLAYER")
-                                }
-                            }
-                            .font(.system(size: 16, weight: .bold, design: .monospaced))
-                            .foregroundColor(TronColors.darkBackground)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(name.isEmpty ? TronColors.dimText : TronColors.green)
-                            .cornerRadius(12)
-                            .neonGlow(color: name.isEmpty ? .clear : TronColors.green, radius: 10)
-                        }
-                        .disabled(name.isEmpty || isSaving)
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 20)
+            ScrollView {
+                VStack(spacing: 18) {
+                    HStack {
+                        Button(action: { dismiss() }) { Color.clear }
+                            .buttonStyle(.srImage("Cancel_Button"))
+                            .frame(width: 104, height: 44)
+                            .accessibilityLabel("Cancel")
+                        Spacer()
                     }
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
+                    .padding(.horizontal, 12)
+                    .padding(.top, 12)
+
+                    Image(isEditing ? "SR_Edit_Player_Title" : "SR_Add_Player_Title")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .padding(.horizontal, 20)
+                        .accessibilityLabel(isEditing ? "Edit player" : "Add player")
+
+                    // Name field on the gold plate
+                    SRArtPlate(isNameFocused ? "SR_Player_Name_Field_Selected" : "SR_Player_Name_Field_Unselected") { size in
+                        TextField("", text: $name, prompt: Text("PLAYER NAME").foregroundColor(SRColors.gold.opacity(0.6)))
+                            .font(SRFont.display(size.height * 0.20))
+                            .foregroundColor(SRColors.text)
+                            .multilineTextAlignment(.center)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.words)
+                            .focused($isNameFocused)
+                            .frame(width: size.width * 0.74)
+                            .position(x: size.width * 0.5, y: size.height * 0.44)
                     }
-                    .foregroundColor(TronColors.orange)
+                    .padding(.horizontal, 12)
+
+                    // Portland players only appear for the Coattail Classic
+                    Toggle(isOn: $isPortland) {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text("PORTLAND CHAPTER")
+                                .font(SRFont.display(15))
+                                .srGoldText()
+                            Text("Coattail Classic only · not in LA stats")
+                                .font(SRFont.mono(11))
+                                .foregroundColor(SRColors.text.opacity(0.8))
+                        }
+                    }
+                    .tint(SRColors.purple)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 12)
+                    .srPlate(glow: SRColors.purple)
+                    .padding(.horizontal, 24)
+
+                    // Add Player / Save Changes
+                    Button(action: savePlayer) {
+                        GeometryReader { geo in
+                            ZStack {
+                                Image(systemName: isEditing ? "checkmark" : "plus")
+                                    .font(.system(size: geo.size.height * 0.16, weight: .black))
+                                    .foregroundColor(.black.opacity(0.75))
+                                    .position(x: geo.size.width * 0.205, y: geo.size.height * 0.48)
+                                Group {
+                                    if isSaving {
+                                        ProgressView().tint(SRColors.text)
+                                    } else {
+                                        Text(isEditing ? "SAVE CHANGES" : "ADD PLAYER")
+                                            .font(SRFont.slab(geo.size.height * 0.15))
+                                            .foregroundColor(SRColors.text)
+                                            .lineLimit(1)
+                                            .minimumScaleFactor(0.6)
+                                    }
+                                }
+                                .frame(width: geo.size.width * 0.52)
+                                .position(x: geo.size.width * 0.55, y: geo.size.height * 0.48)
+                            }
+                        }
+                    }
+                    .buttonStyle(.srImage("Primary_Action_Button_Blank"))
+                    .padding(.horizontal, 20)
+                    .opacity(trimmedName.isEmpty ? 0.5 : 1)
+                    .disabled(trimmedName.isEmpty || isSaving)
                 }
-            }
-            .onAppear {
-                if let player = player {
-                    name = player.name
-                    isPortland = player.isPortland
-                }
-            }
-            .alert("ERROR", isPresented: $showingError) {
-                Button("OK", role: .cancel) {}
-            } message: {
-                Text(errorMessage)
+                .padding(.bottom, 24)
             }
         }
+        .onAppear {
+            if let player = player {
+                name = player.name
+                isPortland = player.isPortland
+            }
+        }
+        .alert("ERROR", isPresented: $showingError) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(errorMessage)
+        }
+    }
+
+    private var trimmedName: String {
+        name.trimmingCharacters(in: .whitespaces)
     }
 
     private func savePlayer() {

@@ -2,7 +2,7 @@
 //  LeaderboardView.swift
 //  Dong Country Ledger 5000
 //
-//  Season leaderboard and statistics
+//  Season leaderboard (Stickball Rich skin)
 //
 
 import SwiftUI
@@ -13,10 +13,27 @@ struct LeaderboardView: View {
 
     enum StatCategory: String, CaseIterable {
         case dongs = "DONGS"
-        case drops = "DROPS"
-        case doublePlays = "DBL PLY"
         case salamies = "SALAMIES"
         case wins = "WINS"
+        case drops = "DROPS"
+        case doublePlays = "DBL PLY"
+
+        var title: String {
+            self == .doublePlays ? "DOUBLE PLAYS" : rawValue
+        }
+
+        private var artName: String {
+            switch self {
+            case .dongs: return "Dongs"
+            case .salamies: return "Salamies"
+            case .wins: return "Wins"
+            case .drops: return "Drops"
+            case .doublePlays: return "Double_Plays"
+            }
+        }
+
+        var selectedImage: String { "SR_Selected_\(artName)" }
+        var unselectedImage: String { "SR_Unselected_\(artName)" }
 
         var color: Color {
             switch self {
@@ -47,51 +64,71 @@ struct LeaderboardView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                TronGridBackground()
+                SRBackground()
 
-                VStack(spacing: 0) {
-                    // Season header
-                    VStack(spacing: 4) {
-                        Text("SEASON STANDINGS")
-                            .font(.system(size: 14, weight: .medium, design: .monospaced))
-                            .foregroundColor(TronColors.secondaryText)
+                ScrollView {
+                    VStack(spacing: 10) {
+                        SRHeader(banner: "SR_Season_9_Leaders")
 
-                        Text("DONG COUNTRY")
-                            .font(.system(size: 28, weight: .black, design: .monospaced))
-                            .foregroundColor(TronColors.cyan)
-                            .neonGlow(color: TronColors.cyan, radius: 10)
-                    }
-                    .padding(.vertical, 16)
-
-                    // Category filter
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(StatCategory.allCases, id: \.self) { category in
-                                CategoryPill(
-                                    title: category.rawValue,
-                                    isSelected: selectedCategory == category,
-                                    color: category.color
-                                ) {
-                                    withAnimation(.easeInOut(duration: 0.2)) {
-                                        selectedCategory = category
+                        // Category buttons (scrolls sideways; art is too wide to fit all five)
+                        ScrollViewReader { proxy in
+                            ScrollView(.horizontal, showsIndicators: false) {
+                                HStack(spacing: 0) {
+                                    ForEach(StatCategory.allCases, id: \.self) { category in
+                                        let isSelected = selectedCategory == category
+                                        Button(action: {
+                                            withAnimation(.easeInOut(duration: 0.15)) {
+                                                selectedCategory = category
+                                                proxy.scrollTo(category, anchor: .center)
+                                            }
+                                        }) {
+                                            Image(isSelected ? category.selectedImage : category.unselectedImage)
+                                                .resizable()
+                                                .aspectRatio(contentMode: .fit)
+                                                .frame(height: isSelected ? 52 : 40)
+                                        }
+                                        .buttonStyle(.plain)
+                                        .id(category)
+                                        .accessibilityLabel(category.title)
+                                        .accessibilityAddTraits(isSelected ? .isSelected : [])
                                     }
                                 }
+                                .frame(height: 56)
+                                .padding(.horizontal, 8)
                             }
                         }
-                        .padding(.horizontal, 16)
-                    }
-                    .padding(.bottom, 12)
 
-                    // Leaderboard
-                    if sortedStats.isEmpty {
-                        EmptyStateView(
-                            icon: "chart.bar.xaxis",
-                            title: "NO DATA",
-                            message: "Enter weekly stats to see the leaderboard"
-                        )
-                    } else {
-                        ScrollView {
-                            LazyVStack(spacing: 8) {
+                        // Column labels
+                        HStack {
+                            Image(systemName: "crown.fill")
+                                .font(.system(size: 12))
+                                .srGoldText()
+                            Text("PLAYER")
+                                .font(SRFont.display(15))
+                                .srGoldText()
+                                .padding(.leading, 40)
+                            Spacer()
+                            Text(selectedCategory.title)
+                                .font(SRFont.display(15))
+                                .srGoldText()
+                        }
+                        .padding(.horizontal, 28)
+
+                        // Leaderboard
+                        if sortedStats.isEmpty {
+                            SRArtPlate("SR_Player_Row_Empty") { _ in
+                                VStack(spacing: 4) {
+                                    Text("NO STATS YET")
+                                        .font(SRFont.display(20))
+                                        .foregroundColor(SRColors.text)
+                                    Text("Enter weekly stats to see the leaders")
+                                        .font(SRFont.mono(11))
+                                        .foregroundColor(SRColors.gold)
+                                }
+                            }
+                            .padding(.horizontal, 12)
+                        } else {
+                            LazyVStack(spacing: 4) {
                                 ForEach(Array(sortedStats.enumerated()), id: \.element.id) { index, stats in
                                     LeaderboardRow(
                                         stats: stats,
@@ -100,20 +137,15 @@ struct LeaderboardView: View {
                                     )
                                 }
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 8)
+                            .padding(.horizontal, 12)
                         }
+
+                        SRFooterLogo()
                     }
+                    .padding(.bottom, 12)
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text("LEADERBOARD")
-                        .font(.system(size: 16, weight: .bold, design: .monospaced))
-                        .foregroundColor(TronColors.cyan)
-                }
-            }
+            .toolbar(.hidden, for: .navigationBar)
         }
     }
 }
@@ -160,70 +192,9 @@ struct LeaderboardRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 12) {
-            // Rank badge
-            ZStack {
-                if rank <= 3 {
-                    Circle()
-                        .fill(rankColor.opacity(0.2))
-                        .frame(width: 36, height: 36)
-
-                    Circle()
-                        .stroke(rankColor, lineWidth: 2)
-                        .frame(width: 36, height: 36)
-                        .neonGlow(color: rankColor, radius: 5)
-                }
-
-                Text("\(rank)")
-                    .font(.system(size: 16, weight: .bold, design: .monospaced))
-                    .foregroundColor(rankColor)
-            }
-            .frame(width: 40)
-
-            // Player name
-            VStack(alignment: .leading, spacing: 2) {
-                Text(stats.playerName.uppercased())
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                    .foregroundColor(TronColors.primaryText)
-                    .lineLimit(1)
-
-                Text("\(stats.gamesPlayed) WEEKS PLAYED")
-                    .font(.system(size: 9, design: .monospaced))
-                    .foregroundColor(TronColors.dimText)
-            }
-
-            Spacer()
-
-            // Highlighted stat
-            VStack(spacing: 2) {
-                Text("\(highlightedValue)")
-                    .font(.system(size: 24, weight: .bold, design: .monospaced))
-                    .foregroundColor(category.color)
-                    .neonGlow(color: category.color, radius: 8)
-
-                Text(category.rawValue)
-                    .font(.system(size: 8, weight: .medium, design: .monospaced))
-                    .foregroundColor(category.color.opacity(0.7))
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .background(TronColors.cardBackground)
-        .cornerRadius(10)
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(rank <= 3 ? rankColor.opacity(0.4) : TronColors.gridLine.opacity(0.3), lineWidth: 1)
-        )
-        .neonGlow(color: rankColor, radius: rank == 1 ? 5 : 0)
-    }
-
-    var rankColor: Color {
-        switch rank {
-        case 1: return TronColors.yellow
-        case 2: return TronColors.cyan
-        case 3: return TronColors.orange
-        default: return TronColors.dimText
-        }
+        SRRankRow(rank: rank, name: stats.playerName, value: highlightedValue)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(rank). \(stats.playerName), \(highlightedValue) \(category.title.lowercased())")
     }
 }
 

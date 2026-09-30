@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  Dong Country Ledger 5000
 //
-//  Main navigation view with Tron aesthetic
+//  Main navigation with the Stickball Rich tab bar
 //
 
 import SwiftUI
@@ -26,64 +26,26 @@ struct ContentView: View {
     }
 
     private var mainContent: some View {
+        // Leaderboard is first (main page). All four tabs stay alive so each
+        // keeps its scroll position and state; only the selected one is shown.
         ZStack {
-            // Tron grid background
-            TronGridBackground()
-
-            // Main content - Leaderboard is now first (main page)
-            TabView(selection: $selectedTab) {
-                LeaderboardView()
-                    .tabItem {
-                        Label("SEASON", systemImage: "trophy")
-                    }
-                    .tag(0)
-
-                WeeklyStatsView()
-                    .tabItem {
-                        Label("WEEKLY", systemImage: "calendar.badge.clock")
-                    }
-                    .tag(1)
-
-                PastSeasonsView()
-                    .tabItem {
-                        Label("HISTORIC", systemImage: "book.fill")
-                    }
-                    .tag(2)
-
-                PlayersView()
-                    .tabItem {
-                        Label("PLAYERS", systemImage: "person.3")
-                    }
-                    .tag(3)
-            }
-            .tint(TronColors.cyan)
+            tab(.season) { LeaderboardView() }
+            tab(.weekly) { WeeklyStatsView() }
+            tab(.historic) { PastSeasonsView() }
+            tab(.players) { PlayersView() }
         }
-        .onAppear {
-            configureTabBarAppearance()
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            SRTabBar(selection: $selectedTab)
         }
+        .background(SRBackground())
     }
 
-    private func configureTabBarAppearance() {
-        let appearance = UITabBarAppearance()
-        appearance.configureWithOpaqueBackground()
-        appearance.backgroundColor = UIColor(TronColors.darkBackground)
-
-        // Normal state
-        appearance.stackedLayoutAppearance.normal.iconColor = UIColor(TronColors.dimText)
-        appearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-            .foregroundColor: UIColor(TronColors.dimText),
-            .font: UIFont.monospacedSystemFont(ofSize: 10, weight: .medium)
-        ]
-
-        // Selected state
-        appearance.stackedLayoutAppearance.selected.iconColor = UIColor(TronColors.cyan)
-        appearance.stackedLayoutAppearance.selected.titleTextAttributes = [
-            .foregroundColor: UIColor(TronColors.cyan),
-            .font: UIFont.monospacedSystemFont(ofSize: 10, weight: .bold)
-        ]
-
-        UITabBar.appearance().standardAppearance = appearance
-        UITabBar.appearance().scrollEdgeAppearance = appearance
+    private func tab<Content: View>(_ tab: SRTab, @ViewBuilder content: () -> Content) -> some View {
+        let isSelected = selectedTab == tab.rawValue
+        return content()
+            .opacity(isSelected ? 1 : 0)
+            .allowsHitTesting(isSelected)
+            .accessibilityHidden(!isSelected)
     }
 }
 

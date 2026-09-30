@@ -8,22 +8,24 @@
 import SwiftUI
 
 // MARK: - Color Palette
+// Names are from the original Tron theme; values now follow the Stickball Rich
+// gold / purple / black-marble palette so every screen picks up the new skin.
 struct TronColors {
-    // Primary neon colors
-    static let cyan = Color(red: 0.0, green: 0.95, blue: 0.95)
-    static let orange = Color(red: 1.0, green: 0.6, blue: 0.2)
-    static let magenta = Color(red: 1.0, green: 0.2, blue: 0.6)
-    static let green = Color(red: 0.2, green: 1.0, blue: 0.4)
-    static let yellow = Color(red: 1.0, green: 0.95, blue: 0.3)
-    static let purple = Color(red: 0.6, green: 0.2, blue: 1.0)
+    // Primary accent colors
+    static let cyan = Color(red: 0.96, green: 0.78, blue: 0.36)      // gold
+    static let orange = Color(red: 1.0, green: 0.55, blue: 0.2)
+    static let magenta = Color(red: 0.78, green: 0.35, blue: 1.0)    // violet
+    static let green = Color(red: 0.3, green: 0.9, blue: 0.45)
+    static let yellow = Color(red: 1.0, green: 0.88, blue: 0.5)      // light gold
+    static let purple = Color(red: 0.62, green: 0.3, blue: 1.0)
 
-    // Background colors
-    static let darkBackground = Color(red: 0.02, green: 0.02, blue: 0.08)
-    static let cardBackground = Color(red: 0.05, green: 0.05, blue: 0.12)
-    static let surfaceBackground = Color(red: 0.08, green: 0.08, blue: 0.15)
+    // Background colors (black marble)
+    static let darkBackground = Color(red: 0.03, green: 0.02, blue: 0.03)
+    static let cardBackground = Color(red: 0.07, green: 0.05, blue: 0.06)
+    static let surfaceBackground = Color(red: 0.11, green: 0.08, blue: 0.09)
 
-    // Grid line color
-    static let gridLine = Color(red: 0.1, green: 0.3, blue: 0.4)
+    // Border line color (dark gold)
+    static let gridLine = Color(red: 0.62, green: 0.45, blue: 0.15)
 
     // Text colors
     static let primaryText = Color.white
@@ -139,35 +141,15 @@ struct TronTextFieldStyle: TextFieldStyle {
     }
 }
 
-// MARK: - Animated Grid Background
+// MARK: - Screen Background
+/// Stickball Rich scene, dimmed so forms and lists stay readable
 struct TronGridBackground: View {
-    @State private var phase: CGFloat = 0
-
     var body: some View {
-        GeometryReader { geometry in
-            Canvas { context, size in
-                let gridSpacing: CGFloat = 40
-                let lineWidth: CGFloat = 0.5
-
-                // Vertical lines
-                for x in stride(from: 0, to: size.width, by: gridSpacing) {
-                    var path = Path()
-                    path.move(to: CGPoint(x: x, y: 0))
-                    path.addLine(to: CGPoint(x: x, y: size.height))
-                    context.stroke(path, with: .color(TronColors.gridLine.opacity(0.3)), lineWidth: lineWidth)
-                }
-
-                // Horizontal lines
-                for y in stride(from: 0, to: size.height, by: gridSpacing) {
-                    var path = Path()
-                    path.move(to: CGPoint(x: 0, y: y))
-                    path.addLine(to: CGPoint(x: size.width, y: y))
-                    context.stroke(path, with: .color(TronColors.gridLine.opacity(0.3)), lineWidth: lineWidth)
-                }
-            }
+        ZStack {
+            SRBackground()
+            Color.black.opacity(0.45)
+                .ignoresSafeArea()
         }
-        .background(TronColors.darkBackground)
-        .ignoresSafeArea()
     }
 }
 

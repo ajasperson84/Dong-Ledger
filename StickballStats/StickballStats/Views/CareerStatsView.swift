@@ -207,71 +207,97 @@ struct PlayerCareerDetailView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                TronGridBackground()
+        ZStack {
+            SRBackground()
 
-                ScrollView {
-                    VStack(spacing: 20) {
-                        // Player name header
-                        Text(stats.playerName.uppercased())
-                            .font(.system(size: 24, weight: .bold, design: .monospaced))
-                            .foregroundColor(TronColors.cyan)
-                            .neonGlow(color: TronColors.cyan, radius: 10)
-                            .padding(.top, 20)
+            ScrollView {
+                VStack(spacing: 10) {
+                    HStack {
+                        Button(action: { dismiss() }) { Color.clear }
+                            .buttonStyle(.srImage("Done_Button"))
+                            .frame(width: 104, height: 48)
+                            .accessibilityLabel("Done")
+                        Spacer()
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.top, 12)
 
-                        Text("\(stats.seasonsPlayed) SEASONS PLAYED")
-                            .font(.system(size: 12, weight: .medium, design: .monospaced))
-                            .foregroundColor(TronColors.secondaryText)
-
-                        // Achievement badges
-                        if playerAchievements.hasBadges {
-                            VStack(spacing: 8) {
-                                Text("ACHIEVEMENTS")
-                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                    .foregroundColor(TronColors.secondaryText)
-
-                                LazyVGrid(columns: [
-                                    GridItem(.flexible()),
-                                    GridItem(.flexible()),
-                                    GridItem(.flexible())
-                                ], spacing: 12) {
-                                    ForEach(playerAchievements.badges) { badge in
-                                        BadgeDisplayView(badge: badge)
-                                    }
-                                }
-                            }
-                            .padding(.horizontal, 16)
+                    // Name and seasons on the profile plaque
+                    SRArtPlate("SR_Profile_Header_Plaque_Blank") { size in
+                        ZStack {
+                            Text(stats.playerName.uppercased())
+                                .font(SRFont.slab(size.height * 0.15))
+                                .foregroundColor(SRColors.text)
+                                .shadow(color: .black, radius: 1, x: 0, y: 1)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.5)
+                                .frame(width: size.width * 0.74)
+                                .position(x: size.width * 0.5, y: size.height * 0.545)
+                            Text("\(stats.seasonsPlayed) SEASONS PLAYED")
+                                .font(SRFont.mono(size.height * 0.07))
+                                .foregroundColor(SRColors.gold)
+                                .position(x: size.width * 0.5, y: size.height * 0.835)
                         }
+                    }
+                    .padding(.horizontal, 10)
 
-                        // Stats grid - only dongs, double plays, salamies, dong robberies
-                        VStack(spacing: 12) {
-                            CareerStatCard(title: "DONGS", value: stats.totalDongs, color: TronColors.cyan)
-                            CareerStatCard(title: "DOUBLE PLAYS", value: stats.totalDoublePlays, color: TronColors.magenta)
-                            CareerStatCard(title: "SALAMIES", value: stats.totalSalamies, color: TronColors.green)
-                            CareerStatCard(title: "DONG ROBBERIES", value: stats.totalDongRobs, color: Color.purple)
-
-                            // YFSLA Championships
-                            let champCount = YFSLAChampions.champCount(for: stats.playerName)
-                            if champCount > 0 {
-                                CareerStatCard(title: "YFSLA CHAMPIONSHIPS", value: champCount, color: TronColors.yellow)
+                    // Achievement badges
+                    if playerAchievements.hasBadges {
+                        LazyVGrid(columns: [
+                            GridItem(.flexible()),
+                            GridItem(.flexible()),
+                            GridItem(.flexible())
+                        ], spacing: 12) {
+                            ForEach(playerAchievements.badges) { badge in
+                                BadgeDisplayView(badge: badge)
                             }
                         }
-                        .padding(.horizontal, 16)
+                        .padding(.horizontal, 12)
                     }
-                    .padding(.bottom, 40)
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Done") {
-                        dismiss()
+
+                    // Career totals
+                    VStack(spacing: 2) {
+                        ProfileStatRow(title: "DONGS", value: stats.totalDongs)
+                        ProfileStatRow(title: "DOUBLE PLAYS", value: stats.totalDoublePlays)
+                        ProfileStatRow(title: "SALAMIES", value: stats.totalSalamies)
+                        ProfileStatRow(title: "DONG ROBBERIES", value: stats.totalDongRobs)
+
+                        // YFSLA Championships
+                        let champCount = YFSLAChampions.champCount(for: stats.playerName)
+                        if champCount > 0 {
+                            ProfileStatRow(title: "YFSLA CHAMPIONSHIPS", value: champCount)
+                        }
                     }
-                    .foregroundColor(TronColors.orange)
+                    .padding(.horizontal, 10)
                 }
+                .padding(.bottom, 32)
             }
         }
+    }
+}
+
+// MARK: - Profile Stat Row
+/// Stat label in the long plate and the diamond total in the end box
+struct ProfileStatRow: View {
+    let title: String
+    let value: Int
+
+    var body: some View {
+        SRArtPlate("SR_Profile_Stat_Row_Blank") { size in
+            ZStack {
+                Text(title)
+                    .font(SRFont.display(size.height * 0.26))
+                    .srGoldText()
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .frame(width: size.width * 0.62, alignment: .leading)
+                    .position(x: size.width * 0.39, y: size.height * 0.52)
+                DiamondNumber(value: value, height: size.height * 0.48)
+                    .position(x: size.width * 0.865, y: size.height * 0.52)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(title.lowercased()): \(value)")
     }
 }
 
@@ -279,42 +305,64 @@ struct PlayerCareerDetailView: View {
 struct BadgeDisplayView: View {
     let badge: BadgeInfo
 
+    /// Achievement medallion art for badges that have it
+    private var artName: String? {
+        switch badge.name {
+        case "Salami Club": return "SR_Achievement_Salami_Club"
+        case "200 Club": return "SR_Achievement_200_Club"
+        case "MVP": return "SR_Achievement_MVP"
+        case "Dong King": return "SR_Achievement_Dong_King"
+        case "Rookie of the Year": return "SR_Achievement_Rookie_Of_The_Year"
+        default: return nil
+        }
+    }
+
     var body: some View {
         VStack(spacing: 4) {
-            ZStack {
-                Circle()
-                    .fill(badge.color.opacity(0.2))
-                    .frame(width: 50, height: 50)
-
-                Circle()
-                    .stroke(badge.color, lineWidth: 2)
-                    .frame(width: 50, height: 50)
-
-                Image(systemName: badge.icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(badge.color)
+            ZStack(alignment: .topTrailing) {
+                if let artName {
+                    Image(artName)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(height: 86)
+                } else {
+                    ZStack {
+                        Circle()
+                            .fill(RadialGradient(colors: [badge.color.opacity(0.5), .black], center: .center, startRadius: 2, endRadius: 34))
+                        Circle()
+                            .stroke(SRColors.goldGradient, lineWidth: 4)
+                        Image(systemName: badge.icon)
+                            .font(.system(size: 26))
+                            .srGoldText()
+                    }
+                    .frame(width: 70, height: 70)
+                    .frame(height: 86)
+                }
 
                 // Multiplier badge
                 if badge.multiplier > 1 {
                     Text("\(badge.multiplier)X")
-                        .font(.system(size: 8, weight: .black, design: .monospaced))
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 4)
+                        .font(SRFont.display(12))
+                        .foregroundColor(.black)
+                        .padding(.horizontal, 5)
                         .padding(.vertical, 2)
-                        .background(badge.color)
+                        .background(SRColors.goldGradient)
                         .cornerRadius(4)
-                        .offset(x: 18, y: -18)
                 }
             }
-            .neonGlow(color: badge.color, radius: 5)
 
-            Text(badge.name.uppercased())
-                .font(.system(size: 8, weight: .bold, design: .monospaced))
-                .foregroundColor(badge.color)
-                .multilineTextAlignment(.center)
-                .lineLimit(2)
+            // Art already carries the badge title
+            if artName == nil {
+                Text(badge.name.uppercased())
+                    .font(SRFont.display(11))
+                    .srGoldText()
+                    .multilineTextAlignment(.center)
+                    .lineLimit(2)
+            }
         }
         .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(badge.multiplier > 1 ? "\(badge.name), \(badge.multiplier) times" : badge.name)
     }
 }
 

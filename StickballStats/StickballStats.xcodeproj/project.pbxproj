@@ -35,6 +35,13 @@
 		AA0016 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = AA1016; };
 		AA0017 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = AA2001; };
 		AA0018 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = AA2002; };
+		AA0030 /* AbrilFatface-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AA1030; };
+		AA0031 /* Ultra-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AA1031; };
+		AA0032 /* CourierPrime-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = AA1032; };
+		AA0033 /* AbrilFatface-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = AA1033; };
+		AA0034 /* Ultra-LICENSE.txt in Resources */ = {isa = PBXBuildFile; fileRef = AA1034; };
+		AA0035 /* CourierPrime-OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = AA1035; };
+		AA0029 /* StickballRichTheme.swift in Sources */ = {isa = PBXBuildFile; fileRef = AA1027; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -65,6 +72,13 @@
 		AA1015 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		AA1016 /* GoogleService-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
 		AA3001 /* StickballStats.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StickballStats.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AA1030 /* AbrilFatface-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "AbrilFatface-Regular.ttf"; sourceTree = "<group>"; };
+		AA1031 /* Ultra-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Ultra-Regular.ttf"; sourceTree = "<group>"; };
+		AA1032 /* CourierPrime-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "CourierPrime-Bold.ttf"; sourceTree = "<group>"; };
+		AA1033 /* AbrilFatface-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "AbrilFatface-OFL.txt"; sourceTree = "<group>"; };
+		AA1034 /* Ultra-LICENSE.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "Ultra-LICENSE.txt"; sourceTree = "<group>"; };
+		AA1035 /* CourierPrime-OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = "CourierPrime-OFL.txt"; sourceTree = "<group>"; };
+		AA1027 /* StickballRichTheme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StickballRichTheme.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -98,6 +112,7 @@
 				AA5006 /* Components */,
 				AA5007 /* Services */,
 				AA5008 /* Theme */,
+				AA5009 /* Fonts */,
 				AA1015 /* Assets.xcassets */,
 				AA1016 /* GoogleService-Info.plist */,
 			);
@@ -165,8 +180,22 @@
 			children = (
 				AA1005 /* TronTheme.swift */,
 				AA1018 /* NameShortener.swift */,
+				AA1027 /* StickballRichTheme.swift */,
 			);
 			path = Theme;
+			sourceTree = "<group>";
+		};
+		AA5009 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				AA1030 /* AbrilFatface-Regular.ttf */,
+				AA1031 /* Ultra-Regular.ttf */,
+				AA1032 /* CourierPrime-Bold.ttf */,
+				AA1033 /* AbrilFatface-OFL.txt */,
+				AA1034 /* Ultra-LICENSE.txt */,
+				AA1035 /* CourierPrime-OFL.txt */,
+			);
+			path = Fonts;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -236,6 +265,12 @@
 			files = (
 				AA0015 /* Assets.xcassets in Resources */,
 				AA0016 /* GoogleService-Info.plist in Resources */,
+				AA0030 /* AbrilFatface-Regular.ttf in Resources */,
+				AA0031 /* Ultra-Regular.ttf in Resources */,
+				AA0032 /* CourierPrime-Bold.ttf in Resources */,
+				AA0033 /* AbrilFatface-OFL.txt in Resources */,
+				AA0034 /* Ultra-LICENSE.txt in Resources */,
+				AA0035 /* CourierPrime-OFL.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -258,6 +293,7 @@
 				AA0010 /* PlayerStatsEntryView.swift in Sources */,
 				AA0011 /* BatchStatsEntryView.swift in Sources */,
 				AA0012 /* LeaderboardView.swift in Sources */,
+				AA0029 /* StickballRichTheme.swift in Sources */,
 				AA0013 /* PlayersView.swift in Sources */,
 				AA0014 /* AddEditPlayerView.swift in Sources */,
 				AA0019 /* SplashView.swift in Sources */,

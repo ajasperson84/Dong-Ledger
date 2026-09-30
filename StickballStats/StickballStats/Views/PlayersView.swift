@@ -49,26 +49,32 @@ struct PlayersView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                TronGridBackground()
+                SRBackground()
 
-                VStack(spacing: 0) {
-                    // Quick add bar (only show in admin mode)
-                    if adminService.isAdminMode {
-                        QuickAddPlayerBar(onAdd: { showingAddPlayer = true })
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 12)
-                    }
+                ScrollView {
+                    VStack(spacing: 4) {
+                        SRHeader(banner: "SR_Players_Banner", bannerWidth: 0.8)
+                            .overlay(alignment: .bottomLeading) {
+                                adminToggle
+                                    .padding(.leading, 8)
+                                    .padding(.bottom, 4)
+                            }
 
-                    if statsService.players.isEmpty {
-                        EmptyStateView(
-                            icon: "person.3",
-                            title: "NO PLAYERS",
-                            message: adminService.isAdminMode ? "Tap + to add your first player" : "No players added yet"
-                        )
-                    } else {
-                        // Players list
-                        ScrollView {
-                            LazyVStack(spacing: 8) {
+                        // Add player (admin mode)
+                        if adminService.isAdminMode {
+                            Button(action: { showingAddPlayer = true }) { Color.clear }
+                                .buttonStyle(.srImage("Add_New_Player_Button"))
+                                .padding(.horizontal, 40)
+                                .accessibilityLabel("Add new player")
+                        }
+
+                        if statsService.players.isEmpty {
+                            Text(adminService.isAdminMode ? "Tap Add New Player to get started" : "No players added yet")
+                                .font(SRFont.mono(12))
+                                .foregroundColor(SRColors.gold)
+                                .padding(.top, 24)
+                        } else {
+                            LazyVStack(spacing: 2) {
                                 ForEach(statsService.laPlayers) { player in
                                     playerRow(player, careerStats: careerStatsFor(player))
                                 }
@@ -76,60 +82,43 @@ struct PlayersView: View {
                                 // Visiting Portland chapter (Coattail Classic only, no LA career stats)
                                 if !statsService.portlandPlayers.isEmpty {
                                     Text("PORTLAND CHAPTER")
-                                        .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                        .foregroundColor(TronColors.magenta)
+                                        .font(SRFont.slab(16))
+                                        .srGoldText()
                                         .frame(maxWidth: .infinity, alignment: .leading)
                                         .padding(.top, 12)
+                                        .padding(.leading, 12)
 
                                     ForEach(statsService.portlandPlayers) { player in
                                         playerRow(player, careerStats: nil)
                                     }
                                 }
                             }
-                            .padding(.horizontal, 16)
-                            .padding(.bottom, 16)
+                            .padding(.horizontal, 8)
                         }
+
+                        SRFooterLogo()
                     }
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    // Admin toggle button
-                    Button(action: {
-                        if adminService.isAdminMode {
-                            adminService.logout()
-                        } else {
-                            showingAdminPIN = true
-                        }
-                    }) {
-                        HStack(spacing: 4) {
-                            Image(systemName: adminService.isAdminMode ? "lock.open.fill" : "lock.fill")
-                                .font(.system(size: 14))
-                            Text(adminService.isAdminMode ? "ADMIN" : "")
-                                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                        }
-                        .foregroundColor(adminService.isAdminMode ? TronColors.green : TronColors.dimText)
-                    }
+                    .padding(.bottom, 12)
                 }
 
-                ToolbarItem(placement: .principal) {
-                    Text("PLAYERS")
-                        .font(.system(size: 16, weight: .bold, design: .monospaced))
-                        .foregroundColor(TronColors.cyan)
-                }
-
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    if adminService.isAdminMode {
-                        Button(action: { showingAddPlayer = true }) {
-                            Image(systemName: "plus.circle.fill")
-                                .font(.system(size: 20))
-                                .foregroundColor(TronColors.green)
-                                .neonGlow(color: TronColors.green, radius: 5)
+                if showingDeleteConfirmation, let player = playerToDelete {
+                    DeletePlayerModal(
+                        playerName: player.name,
+                        onCancel: {
+                            showingDeleteConfirmation = false
+                            playerToDelete = nil
+                        },
+                        onDelete: {
+                            deletePlayer(player)
+                            showingDeleteConfirmation = false
+                            playerToDelete = nil
                         }
-                    }
+                    )
+                    .transition(.opacity)
                 }
             }
+            .animation(.easeInOut(duration: 0.2), value: showingDeleteConfirmation)
+            .toolbar(.hidden, for: .navigationBar)
             .sheet(isPresented: $showingAddPlayer) {
                 AddEditPlayerView(player: nil)
                     .environmentObject(statsService)
@@ -142,20 +131,26 @@ struct PlayersView: View {
                 AdminPINEntryView()
                     .environmentObject(adminService)
             }
-            .alert("DELETE PLAYER", isPresented: $showingDeleteConfirmation) {
-                Button("Cancel", role: .cancel) {}
-                Button("Delete", role: .destructive) {
-                    if let player = playerToDelete {
-                        deletePlayer(player)
-                    }
-                }
-            } message: {
-                Text("Are you sure you want to remove \(playerToDelete?.name ?? "this player")? Their stats will be preserved but they won't appear in active lists.")
-            }
             .sheet(item: $selectedCareerStats) { stats in
                 PlayerCareerDetailView(stats: stats)
             }
         }
+    }
+
+    /// Padlock when locked; gold ADMIN plate when unlocked (tap to lock again)
+    private var adminToggle: some View {
+        Button(action: {
+            if adminService.isAdminMode {
+                adminService.logout()
+            } else {
+                showingAdminPIN = true
+            }
+        }) {
+            Color.clear
+        }
+        .buttonStyle(.srImage(adminService.isAdminMode ? "Admin_Unlocked" : "Admin_Locked"))
+        .frame(width: adminService.isAdminMode ? 104 : 54, height: 50)
+        .accessibilityLabel(adminService.isAdminMode ? "Admin mode on. Tap to lock" : "Unlock admin mode")
     }
 
     private func deletePlayer(_ player: Player) {
@@ -169,33 +164,8 @@ struct PlayersView: View {
     }
 }
 
-// MARK: - Quick Add Bar
-struct QuickAddPlayerBar: View {
-    let onAdd: () -> Void
-
-    var body: some View {
-        Button(action: onAdd) {
-            HStack {
-                Image(systemName: "plus.circle")
-                    .font(.system(size: 18))
-                Text("ADD NEW PLAYER")
-                    .font(.system(size: 14, weight: .bold, design: .monospaced))
-                Spacer()
-            }
-            .foregroundColor(TronColors.green)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .background(TronColors.cardBackground)
-            .cornerRadius(10)
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(TronColors.green.opacity(0.3), style: StrokeStyle(lineWidth: 1, dash: [5]))
-            )
-        }
-    }
-}
-
 // MARK: - Player Management Row
+/// Directory row: medallion initial, name, career line, and admin edit/delete buttons
 struct PlayerManagementRow: View {
     let player: Player
     let careerStats: CareerStats?
@@ -205,74 +175,110 @@ struct PlayerManagementRow: View {
     let onDelete: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            // Tappable player info area
-            Button(action: onTap) {
-                HStack(spacing: 12) {
-                    // Avatar placeholder
-                    ZStack {
-                        Circle()
-                            .fill(TronColors.surfaceBackground)
-                            .frame(width: 44, height: 44)
+        SRArtPlate("SR_Player_Directory_Row_Unselected") { size in
+            ZStack(alignment: .topLeading) {
+                // Whole-row tap opens the career profile
+                Color.clear
+                    .contentShape(Rectangle())
+                    .onTapGesture(perform: onTap)
 
-                        Circle()
-                            .stroke(TronColors.cyan.opacity(0.5), lineWidth: 1)
-                            .frame(width: 44, height: 44)
+                Group {
+                    Text(String(player.name.prefix(1)).uppercased())
+                        .font(SRFont.slab(size.height * 0.30))
+                        .foregroundStyle(
+                            LinearGradient(colors: [.white, Color(white: 0.72), .white], startPoint: .top, endPoint: .bottom)
+                        )
+                        .shadow(color: .black, radius: 1, x: 0, y: 1)
+                        .position(x: size.width * 0.121, y: size.height * 0.545)
 
-                        Text(String(player.name.prefix(1)).uppercased())
-                            .font(.system(size: 18, weight: .bold, design: .monospaced))
-                            .foregroundColor(TronColors.cyan)
-                    }
-
-                    // Player info
                     VStack(alignment: .leading, spacing: 2) {
                         Text(player.name.uppercased())
-                            .font(.system(size: 14, weight: .bold, design: .monospaced))
-                            .foregroundColor(TronColors.primaryText)
-
+                            .font(SRFont.slab(size.height * 0.20))
+                            .foregroundColor(SRColors.text)
+                            .shadow(color: .black, radius: 1, x: 0, y: 1)
                         if let stats = careerStats {
                             Text("\(stats.totalDongs) CAREER DONGS • \(stats.seasonsPlayed) SEASONS")
-                                .font(.system(size: 9, design: .monospaced))
-                                .foregroundColor(TronColors.dimText)
+                                .font(SRFont.mono(size.height * 0.12))
+                                .foregroundColor(SRColors.gold)
+                        } else if player.isPortland {
+                            Text("PORTLAND CHAPTER")
+                                .font(SRFont.mono(size.height * 0.12))
+                                .foregroundColor(SRColors.pink)
                         }
                     }
-
-                    Spacer()
-
-                    if careerStats != nil {
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 10))
-                            .foregroundColor(TronColors.dimText)
-                    }
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .frame(width: size.width * (isAdminMode ? 0.46 : 0.62), alignment: .leading)
+                    .offset(x: size.width * 0.22, y: size.height * 0.33)
                 }
-            }
-            .buttonStyle(.plain)
+                .allowsHitTesting(false)
 
-            // Action buttons (only show in admin mode)
-            if isAdminMode {
-                HStack(spacing: 12) {
-                    Button(action: onEdit) {
-                        Image(systemName: "pencil.circle.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(TronColors.cyan)
+                // Edit / delete sit over the row's chevron in admin mode
+                if isAdminMode {
+                    HStack(spacing: 2) {
+                        Button(action: onEdit) { Color.clear }
+                            .buttonStyle(.srImage("Edit_Button"))
+                            .frame(width: size.height * 0.56, height: size.height * 0.56)
+                            .accessibilityLabel("Edit \(player.name)")
+                        Button(action: onDelete) { Color.clear }
+                            .buttonStyle(.srImage("Delete_Button"))
+                            .frame(width: size.height * 0.56, height: size.height * 0.56)
+                            .accessibilityLabel("Delete \(player.name)")
                     }
-
-                    Button(action: onDelete) {
-                        Image(systemName: "trash.circle.fill")
-                            .font(.system(size: 24))
-                            .foregroundColor(TronColors.orange)
-                    }
+                    .position(x: size.width * 0.84, y: size.height * 0.55)
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
-        .background(TronColors.cardBackground)
-        .cornerRadius(10)
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(TronColors.gridLine.opacity(0.3), lineWidth: 1)
-        )
+        .accessibilityElement(children: .contain)
+        .accessibilityAction(named: "View career", onTap)
+    }
+}
+
+// MARK: - Delete Player Modal
+struct DeletePlayerModal: View {
+    let playerName: String
+    let onCancel: () -> Void
+    let onDelete: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.7)
+                .ignoresSafeArea()
+                .onTapGesture(perform: onCancel)
+
+            SRArtPlate("SR_Delete_Modal_Blank") { size in
+                VStack(spacing: size.height * 0.05) {
+                    Spacer(minLength: size.height * 0.24)
+
+                    Text("Remove \(playerName)?")
+                        .font(SRFont.display(size.height * 0.07))
+                        .foregroundColor(SRColors.text)
+                        .multilineTextAlignment(.center)
+                        .lineLimit(2)
+                        .minimumScaleFactor(0.6)
+
+                    Text("Their stats are kept, but they won't appear in active lists.")
+                        .font(SRFont.mono(size.height * 0.04))
+                        .foregroundColor(SRColors.gold)
+                        .multilineTextAlignment(.center)
+
+                    Spacer(minLength: 0)
+
+                    HStack(spacing: size.width * 0.04) {
+                        Button(action: onCancel) { Color.clear }
+                            .buttonStyle(.srImage("Cancel_Button"))
+                            .accessibilityLabel("Cancel")
+                        Button(action: onDelete) { Color.clear }
+                            .buttonStyle(.srImage("Delete_Action_Button"))
+                            .accessibilityLabel("Delete")
+                    }
+                    .frame(height: size.height * 0.16)
+                    .padding(.bottom, size.height * 0.08)
+                }
+                .padding(.horizontal, size.width * 0.12)
+            }
+            .padding(.horizontal, 32)
+        }
     }
 }
 
@@ -284,104 +290,70 @@ struct AdminPINEntryView: View {
     @State private var showError = false
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                TronGridBackground()
+        ZStack {
+            TronGridBackground()
 
-                VStack(spacing: 24) {
-                    // Lock icon
-                    ZStack {
-                        Circle()
-                            .fill(TronColors.cyan.opacity(0.2))
-                            .frame(width: 80, height: 80)
-
-                        Image(systemName: "lock.fill")
-                            .font(.system(size: 32))
-                            .foregroundColor(TronColors.cyan)
-                    }
-                    .neonGlow(color: TronColors.cyan, radius: 10)
-
-                    Text("ENTER ADMIN PIN")
-                        .font(.system(size: 18, weight: .bold, design: .monospaced))
-                        .foregroundColor(TronColors.cyan)
-
-                    // PIN display
-                    HStack(spacing: 12) {
-                        ForEach(0..<4) { index in
-                            ZStack {
-                                RoundedRectangle(cornerRadius: 8)
-                                    .fill(TronColors.cardBackground)
-                                    .frame(width: 50, height: 60)
-                                    .overlay(
-                                        RoundedRectangle(cornerRadius: 8)
-                                            .stroke(showError ? TronColors.orange : TronColors.cyan.opacity(0.5), lineWidth: 2)
-                                    )
-
-                                if index < pin.count {
-                                    Circle()
-                                        .fill(TronColors.cyan)
-                                        .frame(width: 16, height: 16)
-                                        .neonGlow(color: TronColors.cyan, radius: 5)
-                                }
-                            }
-                        }
-                    }
-
-                    if showError {
-                        Text("INCORRECT PIN")
-                            .font(.system(size: 12, weight: .bold, design: .monospaced))
-                            .foregroundColor(TronColors.orange)
-                    }
-
-                    // Number pad
-                    VStack(spacing: 12) {
-                        ForEach(0..<3) { row in
-                            HStack(spacing: 12) {
-                                ForEach(1...3, id: \.self) { col in
-                                    let number = row * 3 + col
-                                    PINButton(number: "\(number)") {
-                                        addDigit("\(number)")
-                                    }
-                                }
-                            }
-                        }
-                        HStack(spacing: 12) {
-                            // Empty space
-                            Color.clear
-                                .frame(width: 70, height: 70)
-
-                            PINButton(number: "0") {
-                                addDigit("0")
-                            }
-
-                            // Delete button
-                            Button(action: deleteDigit) {
-                                ZStack {
-                                    Circle()
-                                        .fill(TronColors.cardBackground)
-                                        .frame(width: 70, height: 70)
-
-                                    Image(systemName: "delete.left")
-                                        .font(.system(size: 24))
-                                        .foregroundColor(TronColors.orange)
-                                }
-                            }
-                        }
-                    }
-
+            VStack(spacing: 18) {
+                HStack {
+                    Button(action: { dismiss() }) { Color.clear }
+                        .buttonStyle(.srImage("Cancel_Button"))
+                        .frame(width: 104, height: 44)
+                        .accessibilityLabel("Cancel")
                     Spacer()
                 }
-                .padding(.top, 40)
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
+                .padding(.horizontal, 12)
+
+                Image("SR_Admin_PIN_Title")
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .padding(.horizontal, 30)
+
+                // PIN cells
+                HStack(spacing: 10) {
+                    ForEach(0..<4) { index in
+                        Image(index < pin.count ? "SR_PIN_Cell_Filled" : "SR_PIN_Cell_Empty")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: 58, height: 58)
                     }
-                    .foregroundColor(TronColors.orange)
                 }
+                .accessibilityElement(children: .ignore)
+                .accessibilityLabel("\(pin.count) of 4 digits entered")
+
+                Text(showError ? "INCORRECT PIN" : " ")
+                    .font(SRFont.display(14))
+                    .foregroundColor(TronColors.orange)
+
+                // Number pad
+                VStack(spacing: 10) {
+                    ForEach(0..<3) { row in
+                        HStack(spacing: 16) {
+                            ForEach(1...3, id: \.self) { col in
+                                let number = row * 3 + col
+                                PINButton(number: "\(number)") {
+                                    addDigit("\(number)")
+                                }
+                            }
+                        }
+                    }
+                    HStack(spacing: 16) {
+                        Color.clear
+                            .frame(width: 76, height: 76)
+
+                        PINButton(number: "0") {
+                            addDigit("0")
+                        }
+
+                        Button(action: deleteDigit) { Color.clear }
+                            .buttonStyle(.srImage("PIN_Backspace"))
+                            .frame(width: 76, height: 76)
+                            .accessibilityLabel("Delete digit")
+                    }
+                }
+
+                Spacer()
             }
+            .padding(.top, 16)
         }
         .presentationDetents([.large])
     }
@@ -410,26 +382,18 @@ struct AdminPINEntryView: View {
 }
 
 // MARK: - PIN Button
+/// Gold keypad key with a diamond digit
 struct PINButton: View {
     let number: String
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            ZStack {
-                Circle()
-                    .fill(TronColors.cardBackground)
-                    .frame(width: 70, height: 70)
-                    .overlay(
-                        Circle()
-                            .stroke(TronColors.cyan.opacity(0.3), lineWidth: 1)
-                    )
-
-                Text(number)
-                    .font(.system(size: 28, weight: .bold, design: .monospaced))
-                    .foregroundColor(TronColors.primaryText)
-            }
+            DiamondNumber(value: Int(number) ?? 0, height: 34)
         }
+        .buttonStyle(.srImage("PIN_Key"))
+        .frame(width: 76, height: 76)
+        .accessibilityLabel(number)
     }
 }
 

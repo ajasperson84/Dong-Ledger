@@ -2,7 +2,8 @@
 //  BatchStatsEntryView.swift
 //  Dong Country Ledger 5000
 //
-//  Quick batch entry for players' weekly stats
+//  EDIT WEEK: accordion batch entry for players' weekly stats,
+//  plus editor pieces shared with PlayerStatsEntryView
 //
 
 import SwiftUI
@@ -24,126 +25,92 @@ struct BatchStatsEntryView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                TronGridBackground()
+        ZStack {
+            SRBackground()
 
-                VStack(spacing: 0) {
-                    // Week header
-                    HStack {
-                        VStack(alignment: .leading, spacing: 4) {
-                            // Special event if any
-                            if let gameWeek = statsService.currentGameWeek, let event = gameWeek.specialEvent {
-                                Text(event.rawValue.uppercased())
-                                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                                    .foregroundColor(TronColors.magenta)
-                            } else {
-                                Text("BATCH ENTRY")
-                                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                                    .foregroundColor(TronColors.secondaryText)
-                            }
+            ScrollView {
+                VStack(spacing: 8) {
+                    // Cancel / EDIT WEEK / Save All
+                    ZStack {
+                        Image("SR_Edit_Week_Title")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .padding(.horizontal, 70)
 
-                            Text("WEEK \(statsService.currentWeekNumber)")
-                                .font(.system(size: 20, weight: .bold, design: .monospaced))
-                                .foregroundColor(TronColors.cyan)
-                                .neonGlow(color: TronColors.cyan, radius: 5)
+                        HStack(alignment: .center) {
+                            Button(action: { dismiss() }) { Color.clear }
+                                .buttonStyle(.srImage("Cancel_Button"))
+                                .frame(width: 104, height: 44)
+                                .accessibilityLabel("Cancel")
 
-                            // Show date
-                            if let gameWeek = statsService.currentGameWeek {
-                                Text(gameWeek.formattedDate.uppercased())
-                                    .font(.system(size: 10, weight: .medium, design: .monospaced))
-                                    .foregroundColor(TronColors.dimText)
-                            }
-                        }
+                            Spacer()
 
-                        Spacer()
-
-                        // Save all button
-                        Button(action: saveAllStats) {
-                            HStack(spacing: 6) {
+                            Button(action: saveAllStats) {
                                 if isSaving {
-                                    ProgressView()
-                                        .tint(TronColors.darkBackground)
-                                        .scaleEffect(0.7)
+                                    ProgressView().tint(.black)
                                 } else {
-                                    Image(systemName: "arrow.up.circle.fill")
-                                    Text("SAVE ALL")
+                                    Color.clear
                                 }
                             }
-                            .font(.system(size: 12, weight: .bold, design: .monospaced))
-                            .foregroundColor(TronColors.darkBackground)
-                            .padding(.horizontal, 16)
-                            .padding(.vertical, 10)
-                            .background(TronColors.green)
-                            .cornerRadius(8)
-                            .neonGlow(color: TronColors.green, radius: 5)
+                            .buttonStyle(.srImage("Save_All_Button"))
+                            .frame(width: 116, height: 48)
+                            .disabled(isSaving || isLoading)
+                            .accessibilityLabel("Save all")
                         }
-                        .disabled(isSaving)
+                        .padding(.horizontal, 6)
+                        .offset(y: 16)
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 16)
-                    .background(TronColors.cardBackground)
+                    .padding(.top, 8)
+
+                    EditorDatePlaque()
+                        .environmentObject(statsService)
+                        .padding(.horizontal, 24)
 
                     if isLoading {
-                        Spacer()
                         ProgressView()
-                            .tint(TronColors.cyan)
+                            .tint(SRColors.gold)
                             .scaleEffect(1.5)
-                        Spacer()
+                            .padding(.top, 40)
                     } else if playersThisWeek.isEmpty {
-                        Spacer()
-                        VStack(spacing: 12) {
-                            Image(systemName: "person.3")
-                                .font(.system(size: 40))
-                                .foregroundColor(TronColors.dimText)
+                        VStack(spacing: 8) {
                             Text("NO PLAYERS SELECTED")
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                .foregroundColor(TronColors.secondaryText)
+                                .font(SRFont.display(18))
+                                .foregroundColor(SRColors.text)
                             Text("Add players for this week first")
-                                .font(.system(size: 11, design: .monospaced))
-                                .foregroundColor(TronColors.dimText)
+                                .font(SRFont.mono(12))
+                                .foregroundColor(SRColors.gold)
                         }
-                        Spacer()
+                        .padding(.top, 40)
                     } else {
                         // Players list with inline editing
-                        ScrollView {
-                            LazyVStack(spacing: 8) {
-                                ForEach(playersThisWeek) { player in
-                                    if let playerId = player.id, playerStats[playerId] != nil {
-                                        BatchPlayerRow(
-                                            player: player,
-                                            stats: binding(for: playerId, player: player),
-                                            isExpanded: expandedPlayerId == playerId,
-                                            onTap: {
-                                                withAnimation(.easeInOut(duration: 0.2)) {
-                                                    if expandedPlayerId == playerId {
-                                                        expandedPlayerId = nil
-                                                    } else {
-                                                        expandedPlayerId = playerId
-                                                    }
+                        LazyVStack(spacing: 6) {
+                            ForEach(playersThisWeek) { player in
+                                if let playerId = player.id, playerStats[playerId] != nil {
+                                    BatchPlayerRow(
+                                        player: player,
+                                        stats: binding(for: playerId, player: player),
+                                        isExpanded: expandedPlayerId == playerId,
+                                        onTap: {
+                                            withAnimation(.easeInOut(duration: 0.2)) {
+                                                if expandedPlayerId == playerId {
+                                                    expandedPlayerId = nil
+                                                } else {
+                                                    expandedPlayerId = playerId
                                                 }
                                             }
-                                        )
-                                    }
+                                        }
+                                    )
                                 }
                             }
-                            .padding(16)
                         }
+                        .padding(.horizontal, 8)
                     }
                 }
+                .padding(.bottom, 24)
             }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .foregroundColor(TronColors.orange)
-                }
-            }
-            .task {
-                await loadAllStats()
-            }
+        }
+        .task {
+            await loadAllStats()
         }
     }
 
@@ -203,128 +170,196 @@ struct BatchPlayerRow: View {
     let onTap: () -> Void
 
     var body: some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 4) {
             // Header row (always visible)
             Button(action: onTap) {
-                HStack {
-                    // Use short name
-                    Text(player.name.shortName)
-                        .font(.system(size: 14, weight: .bold, design: .monospaced))
-                        .foregroundColor(TronColors.cyan)
-                        .frame(width: 50, alignment: .leading)
+                SRArtPlate(isExpanded ? "SR_Accordion_Row_Selected" : "SR_Accordion_Row_Unselected") { size in
+                    HStack(spacing: 6) {
+                        Text(player.name.uppercased())
+                            .font(SRFont.display(size.height * 0.26))
+                            .foregroundColor(SRColors.text)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                            .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Spacer()
+                        StatChips(stats: stats, chipWidth: size.width * 0.085, chipHeight: size.height * 0.42)
 
-                    // Quick stats summary
-                    if !isExpanded {
-                        HStack(spacing: 6) {
-                            QuickStatPill(value: stats.dongs, label: "D", color: TronColors.cyan)
-                            QuickStatPill(value: stats.drops, label: "R", color: TronColors.orange)
-                            QuickStatPill(value: stats.doublePlays, label: "DP", color: TronColors.magenta)
-                            QuickStatPill(value: stats.salamies, label: "S", color: TronColors.green)
-                            QuickStatPill(value: stats.wins, label: "W", color: TronColors.yellow)
-                        }
+                        Image(isExpanded ? "SR_Accordion_Chevron_Up" : "SR_Accordion_Chevron_Down")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .frame(width: size.height * 0.30)
                     }
-
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 12))
-                        .foregroundColor(TronColors.cyan)
-                        .padding(.leading, 8)
+                    .padding(.leading, size.width * 0.07)
+                    .padding(.trailing, size.width * 0.06)
                 }
-                .padding(.horizontal, 16)
-                .padding(.vertical, 14)
             }
             .buttonStyle(.plain)
+            .accessibilityHint(isExpanded ? "Collapse" : "Edit stats")
 
             // Expanded editing area
             if isExpanded {
-                VStack(spacing: 16) {
-                    Divider()
-                        .background(TronColors.gridLine)
-
-                    // Full name when expanded
-                    Text(player.name.uppercased())
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
-                        .foregroundColor(TronColors.secondaryText)
-
-                    // Stats counters in a grid
-                    LazyVGrid(columns: [
-                        GridItem(.flexible()),
-                        GridItem(.flexible()),
-                        GridItem(.flexible())
-                    ], spacing: 16) {
-                        CompactStatCounter(title: "DONGS", value: $stats.dongs, color: TronColors.cyan)
-                        CompactStatCounter(title: "DROPS", value: $stats.drops, color: TronColors.orange)
-                        CompactStatCounter(title: "DBL PLY", value: $stats.doublePlays, color: TronColors.magenta)
-                        CompactStatCounter(title: "SALAMIES", value: $stats.salamies, color: TronColors.green)
-                        CompactStatCounter(title: "WINS", value: $stats.wins, color: TronColors.yellow)
-                    }
-                    .padding(.horizontal, 8)
-                }
-                .padding(.bottom, 16)
+                StatEditorPanel(
+                    dongs: $stats.dongs,
+                    drops: $stats.drops,
+                    doublePlays: $stats.doublePlays,
+                    salamies: $stats.salamies,
+                    wins: $stats.wins
+                )
+                .padding(.horizontal, 10)
+                .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
-        .background(TronColors.cardBackground)
-        .cornerRadius(10)
-        .overlay(
-            RoundedRectangle(cornerRadius: 10)
-                .stroke(isExpanded ? TronColors.cyan.opacity(0.5) : TronColors.gridLine.opacity(0.5), lineWidth: 1)
-        )
     }
 }
 
-// MARK: - Quick Stat Pill
-struct QuickStatPill: View {
-    let value: Int
-    let label: String
-    let color: Color
+// MARK: - Stat Chips
+/// D / DR / DP / S / W value chips shown on each accordion row
+struct StatChips: View {
+    let stats: WeeklyStats
+    var chipWidth: CGFloat = 30
+    var chipHeight: CGFloat = 38
 
     var body: some View {
-        HStack(spacing: 2) {
-            Text(label)
-                .font(.system(size: 8, weight: .bold, design: .monospaced))
-            Text("\(value)")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+        HStack(spacing: 3) {
+            chip("D", stats.dongs, SRColors.purple)
+            chip("DR", stats.drops, TronColors.orange)
+            chip("DP", stats.doublePlays, SRColors.pink)
+            chip("S", stats.salamies, TronColors.green)
+            chip("W", stats.wins, SRColors.gold)
         }
-        .foregroundColor(value > 0 ? color : TronColors.dimText)
-        .padding(.horizontal, 6)
-        .padding(.vertical, 3)
-        .background(color.opacity(value > 0 ? 0.15 : 0.05))
-        .cornerRadius(4)
+    }
+
+    private func chip(_ label: String, _ value: Int, _ color: Color) -> some View {
+        VStack(spacing: 0) {
+            Text(label)
+                .font(SRFont.display(chipHeight * 0.26))
+                .srGoldText()
+            Text("\(value)")
+                .font(SRFont.display(chipHeight * 0.46))
+                .foregroundColor(SRColors.text)
+                .minimumScaleFactor(0.6)
+        }
+        .frame(width: chipWidth, height: chipHeight)
+        .background(
+            RoundedRectangle(cornerRadius: 4)
+                .fill(LinearGradient(colors: [color.opacity(0.35), .black], startPoint: .top, endPoint: .bottom))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 4)
+                .stroke(color, lineWidth: 1.5)
+        )
+        .shadow(color: color.opacity(0.6), radius: 3)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("\(label) \(value)")
     }
 }
 
-// MARK: - Compact Stat Counter
-struct CompactStatCounter: View {
+// MARK: - Stat Editor Panel
+/// Gold-ruled grid of +/- steppers: Dongs, Drops, Salamies, Wins, then Double Plays
+struct StatEditorPanel: View {
+    @Binding var dongs: Int
+    @Binding var drops: Int
+    @Binding var doublePlays: Int
+    @Binding var salamies: Int
+    @Binding var wins: Int
+
+    var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                GoldStepper(title: "DONGS", value: $dongs)
+                verticalRule
+                GoldStepper(title: "DROPS", value: $drops)
+            }
+            horizontalRule
+            HStack(spacing: 0) {
+                GoldStepper(title: "SALAMIES", value: $salamies)
+                verticalRule
+                GoldStepper(title: "WINS", value: $wins)
+            }
+            horizontalRule
+            GoldStepper(title: "DOUBLE PLAYS", value: $doublePlays)
+        }
+        .padding(.vertical, 4)
+        .srPlate(glow: SRColors.purple, cornerRadius: 8)
+    }
+
+    private var verticalRule: some View {
+        Rectangle().fill(SRColors.goldGradient).frame(width: 1.5)
+    }
+
+    private var horizontalRule: some View {
+        Rectangle().fill(SRColors.goldGradient).frame(height: 1.5)
+    }
+}
+
+// MARK: - Gold Stepper
+struct GoldStepper: View {
     let title: String
     @Binding var value: Int
-    let color: Color
 
     var body: some View {
-        VStack(spacing: 6) {
+        VStack(spacing: 4) {
             Text(title)
-                .font(.system(size: 9, weight: .bold, design: .monospaced))
-                .foregroundColor(color.opacity(0.8))
+                .font(SRFont.display(15))
+                .foregroundColor(SRColors.text)
 
-            HStack(spacing: 8) {
-                Button(action: { if value > 0 { value -= 1 } }) {
-                    Image(systemName: "minus.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundColor(value > 0 ? color : TronColors.dimText)
-                }
+            HStack(spacing: 10) {
+                Button(action: { if value > 0 { value -= 1 } }) { Color.clear }
+                    .buttonStyle(.srImage("Stepper_Minus_Button"))
+                    .frame(width: 46, height: 46)
+                    .opacity(value > 0 ? 1 : 0.5)
+                    .accessibilityLabel("Decrease \(title.lowercased())")
 
                 Text("\(value)")
-                    .font(.system(size: 20, weight: .bold, design: .monospaced))
-                    .foregroundColor(color)
-                    .frame(minWidth: 30)
-                    .neonGlow(color: color, radius: value > 0 ? 3 : 0)
+                    .font(SRFont.display(34))
+                    .foregroundColor(SRColors.text)
+                    .shadow(color: .black, radius: 1, x: 0, y: 1)
+                    .frame(minWidth: 40)
+                    .accessibilityLabel("\(title.lowercased()) \(value)")
 
-                Button(action: { value += 1 }) {
-                    Image(systemName: "plus.circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundColor(color)
-                }
+                Button(action: { value += 1 }) { Color.clear }
+                    .buttonStyle(.srImage("Stepper_Plus_Button"))
+                    .frame(width: 46, height: 46)
+                    .accessibilityLabel("Increase \(title.lowercased())")
             }
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 10)
+    }
+}
+
+// MARK: - Editor Date Plaque
+/// "SATURDAY · SEP 26" over "WEEK 4 · THE AIRFIELD"
+struct EditorDatePlaque: View {
+    @EnvironmentObject var statsService: StatsService
+
+    private var detailLine: String {
+        var parts = ["WEEK \(statsService.currentWeekNumber)"]
+        if let event = statsService.currentGameWeek?.specialEvent {
+            parts.append(event.rawValue.uppercased())
+        }
+        if let field = statsService.getFieldForWeek(statsService.currentWeekNumber) {
+            parts.append(field.rawValue.uppercased())
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    var body: some View {
+        SRArtPlate("SR_Editor_Date_Field_Plaque_Blank") { size in
+            ZStack {
+                Text(statsService.currentGameWeek?.dayTitle ?? "")
+                    .font(SRFont.display(size.height * 0.22))
+                    .foregroundColor(SRColors.text)
+                    .frame(width: size.width * 0.8)
+                    .position(x: size.width * 0.5, y: size.height * 0.39)
+                Text(detailLine)
+                    .font(SRFont.display(size.height * 0.12))
+                    .srGoldText()
+                    .frame(width: size.width * 0.74)
+                    .position(x: size.width * 0.5, y: size.height * 0.695)
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
         }
     }
 }

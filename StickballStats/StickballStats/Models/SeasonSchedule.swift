@@ -101,6 +101,13 @@ struct GameWeek: Identifiable, Equatable {
         return formatter.string(from: date)
     }
 
+    /// e.g. "SATURDAY · SEP 26"
+    var dayTitle: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE · MMM d"
+        return formatter.string(from: date).uppercased()
+    }
+
     var displayTitle: String {
         if let event = specialEvent {
             return event.rawValue
