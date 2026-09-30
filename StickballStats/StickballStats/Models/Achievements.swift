@@ -279,9 +279,15 @@ struct CoattailsPlayers {
 }
 
 // MARK: - Galactics Players
-/// Players who have earned the Galactics badge (fill in names as it's awarded)
+/// Players who have earned the Galactics badge
 struct GalacticsPlayers {
-    static let players: Set<String> = []
+    static let players: Set<String> = [
+        "Salary",
+        "Flash Dance",
+        "Cuidado",
+        "Cojones",
+        "Uncle Kimmy"
+    ]
 
     static func hasGalactics(_ playerName: String) -> Bool {
         return players.contains(playerName)
@@ -289,9 +295,13 @@ struct GalacticsPlayers {
 }
 
 // MARK: - Wide Open Players
-/// Players who have earned the Wide Open badge (fill in names as it's awarded)
+/// Players who have earned the Wide Open badge
 struct WideOpenPlayers {
-    static let players: Set<String> = []
+    static let players: Set<String> = [
+        "Salary",
+        "Boogie Joe",
+        "Cuidado"
+    ]
 
     static func hasWideOpen(_ playerName: String) -> Bool {
         return players.contains(playerName)
