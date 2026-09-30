@@ -360,7 +360,7 @@ struct SeasonAwardsView: View {
                 .padding(16)
             }
         }
-        .presentationDetents([.medium, .large])
+        .presentationDetents([.large])
     }
 }
 
