@@ -17,7 +17,14 @@ struct PastSeasonsView: View {
 
                 ScrollView {
                     VStack(spacing: 6) {
-                        SRHeader(banner: "SR_Past_Seasons_Banner", bannerWidth: 0.9)
+                        // PAST SEASONS banner on its own, larger, in place of the title lockup
+                        Image("SR_Past_Seasons_Banner")
+                            .resizable()
+                            .aspectRatio(contentMode: .fit)
+                            .containerRelativeFrame(.horizontal) { width, _ in width * 0.98 }
+                            .padding(.top, 4)
+                            .padding(.bottom, 6)
+                            .accessibilityLabel("Past Seasons")
 
                         // Most recent season first (current season is excluded)
                         ForEach(HistoricalData.pastSeasons.reversed()) { season in
