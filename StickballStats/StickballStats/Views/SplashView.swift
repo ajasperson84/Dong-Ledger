@@ -2,140 +2,172 @@
 //  SplashView.swift
 //  Dong Country Ledger 5000
 //
-//  Tron-style animated splash screen with stacked word reveal
+//  Opening splash: the Dong Country Ledger 5000 headline slams onto the
+//  screen, then the Season 9 banner. Each hit shakes the screen, flashes,
+//  throws a gold shockwave and thumps the haptics. Tap to skip.
 //
 
 import SwiftUI
+import UIKit
 
 struct SplashView: View {
-    @State private var showDong = false
-    @State private var showCountry = false
-    @State private var showLedger = false
-    @State private var show5000 = false
-    @State private var glowIntensity: CGFloat = 0
     @Binding var isActive: Bool
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
+    @State private var headlineLanded = false
+    @State private var subheadLanded = false
+    @State private var shakes: CGFloat = 0
+    @State private var flashOpacity: Double = 0
+    @State private var ringScale: CGFloat = 0.3
+    @State private var ringOpacity: Double = 0
+    @State private var ringY: CGFloat = 0.40
 
     var body: some View {
-        ZStack {
-            // Background
-            TronColors.darkBackground
-                .ignoresSafeArea()
+        GeometryReader { geo in
+            ZStack {
+                Image("SR_Splash_Background")
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+                    .frame(width: geo.size.width, height: geo.size.height)
+                    .scaleEffect(1.06) // overscan so the shake never shows the edges
+                    .clipped()
 
-            // Grid overlay
-            TronGridBackground()
-                .opacity(0.5)
+                // Shockwave from the impact point
+                Circle()
+                    .stroke(SRColors.goldGradient, lineWidth: 6)
+                    .frame(width: geo.size.width * 0.8, height: geo.size.width * 0.8)
+                    .scaleEffect(ringScale)
+                    .opacity(ringOpacity)
+                    .blur(radius: 1.5)
+                    .position(x: geo.size.width / 2, y: geo.size.height * ringY)
 
-            // Stacked words
-            VStack(spacing: 0) {
-                // DONG
-                Text("DONG")
-                    .font(.system(size: 72, weight: .black, design: .monospaced))
-                    .foregroundColor(TronColors.cyan)
-                    .shadow(color: TronColors.cyan.opacity(glowIntensity), radius: 20)
-                    .shadow(color: TronColors.cyan.opacity(glowIntensity * 0.5), radius: 40)
-                    .opacity(showDong ? 1 : 0)
-                    .scaleEffect(showDong ? 1 : 0.5)
+                VStack(spacing: -geo.size.width * 0.04) {
+                    Image("SR_Splash_Headline")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: geo.size.width * 0.94)
+                        .modifier(SlamIn(landed: headlineLanded, startScale: 3.2, startRotation: -8))
+                        .accessibilityLabel("Dong Country Ledger 5000")
 
-                // COUNTRY
-                Text("COUNTRY")
-                    .font(.system(size: 56, weight: .black, design: .monospaced))
-                    .foregroundColor(TronColors.cyan)
-                    .shadow(color: TronColors.cyan.opacity(glowIntensity), radius: 20)
-                    .shadow(color: TronColors.cyan.opacity(glowIntensity * 0.5), radius: 40)
-                    .opacity(showCountry ? 1 : 0)
-                    .scaleEffect(showCountry ? 1 : 0.5)
+                    Image("SR_Splash_Season_9")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: geo.size.width * 0.9)
+                        .modifier(SlamIn(landed: subheadLanded, startScale: 2.6, startRotation: 6))
+                        .accessibilityLabel("Season 9: Stickball Rich")
+                }
+                .position(x: geo.size.width / 2, y: geo.size.height * 0.46)
 
-                // LEDGER
-                Text("LEDGER")
-                    .font(.system(size: 56, weight: .bold, design: .monospaced))
-                    .foregroundColor(TronColors.orange)
-                    .shadow(color: TronColors.orange.opacity(glowIntensity), radius: 20)
-                    .shadow(color: TronColors.orange.opacity(glowIntensity * 0.5), radius: 40)
-                    .opacity(showLedger ? 1 : 0)
-                    .scaleEffect(showLedger ? 1 : 0.5)
-
-                // 5000
-                Text("5000")
-                    .font(.system(size: 80, weight: .black, design: .monospaced))
-                    .foregroundColor(TronColors.orange)
-                    .shadow(color: TronColors.orange.opacity(glowIntensity), radius: 25)
-                    .shadow(color: TronColors.orange.opacity(glowIntensity * 0.5), radius: 50)
-                    .opacity(show5000 ? 1 : 0)
-                    .scaleEffect(show5000 ? 1 : 0.5)
+                Color.white
+                    .opacity(flashOpacity)
+                    .allowsHitTesting(false)
             }
-
-            // Scan line effect
-            ScanLineEffect()
-                .opacity(0.1)
+            .modifier(ImpactShake(animatableData: shakes))
         }
-        .onAppear {
-            startAnimation()
+        .ignoresSafeArea()
+        .contentShape(Rectangle())
+        .onTapGesture { finish() }
+        .task { await runSequence() }
+    }
+
+    // MARK: - Sequence
+
+    private func runSequence() async {
+        if reduceMotion {
+            withAnimation(.easeIn(duration: 0.4)) { headlineLanded = true }
+            withAnimation(.easeIn(duration: 0.4).delay(0.4)) { subheadLanded = true }
+            guard await pause(2.2) else { return }
+            finish()
+            return
+        }
+
+        guard await pause(0.35) else { return }
+        withAnimation(.spring(response: 0.26, dampingFraction: 0.55)) {
+            headlineLanded = true
+        }
+        guard await pause(0.16) else { return }
+        impact(atY: 0.40, strength: .heavy)
+
+        guard await pause(0.55) else { return }
+        withAnimation(.spring(response: 0.24, dampingFraction: 0.6)) {
+            subheadLanded = true
+        }
+        guard await pause(0.15) else { return }
+        impact(atY: 0.56, strength: .rigid)
+
+        guard await pause(1.6) else { return }
+        finish()
+    }
+
+    /// Waits, returning false if the splash was dismissed (task cancelled)
+    private func pause(_ seconds: Double) async -> Bool {
+        do {
+            try await Task.sleep(for: .seconds(seconds))
+            return true
+        } catch {
+            return false
         }
     }
 
-    private func startAnimation() {
-        // DONG appears
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.2)) {
-            showDong = true
+    /// Shake, flash, shockwave and haptic thump when a graphic lands
+    private func impact(atY y: CGFloat, strength: UIImpactFeedbackGenerator.FeedbackStyle) {
+        UIImpactFeedbackGenerator(style: strength).impactOccurred(intensity: 1.0)
+
+        withAnimation(.linear(duration: 0.4)) {
+            shakes += 1
         }
 
-        // COUNTRY appears
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.5)) {
-            showCountry = true
+        flashOpacity = 0.55
+        withAnimation(.easeOut(duration: 0.35)) {
+            flashOpacity = 0
         }
 
-        // LEDGER appears
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.8)) {
-            showLedger = true
+        ringY = y
+        ringScale = 0.3
+        ringOpacity = 0.9
+        withAnimation(.easeOut(duration: 0.6)) {
+            ringScale = 1.8
+            ringOpacity = 0
         }
+    }
 
-        // 5000 appears
-        withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(1.1)) {
-            show5000 = true
-        }
-
-        // Glow intensifies
-        withAnimation(.easeInOut(duration: 0.8).delay(1.3)) {
-            glowIntensity = 1.0
-        }
-
-        // Transition to main app
-        DispatchQueue.main.asyncAfter(deadline: .now() + 2.8) {
-            withAnimation(.easeInOut(duration: 0.3)) {
-                isActive = false
-            }
+    private func finish() {
+        guard isActive else { return }
+        withAnimation(.easeInOut(duration: 0.35)) {
+            isActive = false
         }
     }
 }
 
-// MARK: - Scan Line Effect
-struct ScanLineEffect: View {
-    @State private var offset: CGFloat = -1000
+// MARK: - Slam In
+/// Starts huge, tilted and invisible, then lands at full size
+private struct SlamIn: ViewModifier {
+    let landed: Bool
+    let startScale: CGFloat
+    let startRotation: Double
 
-    var body: some View {
-        GeometryReader { geometry in
-            Rectangle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            .clear,
-                            TronColors.cyan.opacity(0.3),
-                            TronColors.cyan.opacity(0.5),
-                            TronColors.cyan.opacity(0.3),
-                            .clear
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-                .frame(height: 100)
-                .offset(y: offset)
-                .onAppear {
-                    withAnimation(.linear(duration: 2.0).repeatForever(autoreverses: false)) {
-                        offset = geometry.size.height + 100
-                    }
-                }
-        }
+    func body(content: Content) -> some View {
+        content
+            .scaleEffect(landed ? 1 : startScale)
+            .rotationEffect(.degrees(landed ? 0 : startRotation))
+            .opacity(landed ? 1 : 0)
+            .blur(radius: landed ? 0 : 6)
+            .shadow(color: .black.opacity(0.7), radius: landed ? 10 : 30, x: 0, y: landed ? 6 : 30)
+    }
+}
+
+// MARK: - Impact Shake
+/// Each whole-number step of animatableData is one decaying shake
+private struct ImpactShake: GeometryEffect {
+    var animatableData: CGFloat
+
+    func effectValue(size: CGSize) -> ProjectionTransform {
+        let progress = animatableData - floor(animatableData)
+        guard progress > 0 else { return ProjectionTransform(.identity) }
+        let decay = 1 - progress
+        let x = 14 * decay * sin(progress * .pi * 8)
+        let y = 9 * decay * cos(progress * .pi * 10)
+        return ProjectionTransform(CGAffineTransform(translationX: x, y: y))
     }
 }
 

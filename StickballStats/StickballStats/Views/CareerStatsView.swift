@@ -309,7 +309,13 @@ struct BadgeDisplayView: View {
     private var artName: String? {
         switch badge.name {
         case "Salami Club": return "SR_Achievement_Salami_Club"
+        case "Century Club": return "SR_Achievement_100_Club"
         case "200 Club": return "SR_Achievement_200_Club"
+        case "300 Club": return "SR_Achievement_300_Club"
+        case "400 Club": return "SR_Achievement_400_Club"
+        case "Coattails": return "SR_Achievement_Coattails"
+        case "Galactics": return "SR_Achievement_Galactics"
+        case "Wide Open": return "SR_Achievement_Wide_Open"
         case "MVP": return "SR_Achievement_MVP"
         case "Dong King": return "SR_Achievement_Dong_King"
         case "Rookie of the Year": return "SR_Achievement_Rookie_Of_The_Year"

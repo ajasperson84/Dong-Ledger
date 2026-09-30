@@ -114,6 +114,8 @@ struct PlayerAchievements: Identifiable {
     var rookieOfYearCount: Int = 0
     var yfslaChampCount: Int = 0
     var hasCoattails: Bool = false
+    var hasGalactics: Bool = false
+    var hasWideOpen: Bool = false
 
     // Get all badges as displayable info
     var badges: [BadgeInfo] {
@@ -176,13 +178,31 @@ struct PlayerAchievements: Identifiable {
             ))
         }
 
+        // Galactics
+        if hasGalactics {
+            result.append(BadgeInfo(
+                name: "Galactics",
+                icon: "sparkles",
+                color: TronColors.purple
+            ))
+        }
+
+        // The Wide Open
+        if hasWideOpen {
+            result.append(BadgeInfo(
+                name: "Wide Open",
+                icon: "door.left.hand.open",
+                color: TronColors.cyan
+            ))
+        }
+
         return result
     }
 
     var hasBadges: Bool {
         return salamiTier != .none || centuryTier != .none ||
                mvpCount > 0 || dongKingCount > 0 || rookieOfYearCount > 0 ||
-               hasCoattails
+               hasCoattails || hasGalactics || hasWideOpen
     }
 }
 
@@ -258,6 +278,26 @@ struct CoattailsPlayers {
     }
 }
 
+// MARK: - Galactics Players
+/// Players who have earned the Galactics badge (fill in names as it's awarded)
+struct GalacticsPlayers {
+    static let players: Set<String> = []
+
+    static func hasGalactics(_ playerName: String) -> Bool {
+        return players.contains(playerName)
+    }
+}
+
+// MARK: - Wide Open Players
+/// Players who have earned the Wide Open badge (fill in names as it's awarded)
+struct WideOpenPlayers {
+    static let players: Set<String> = []
+
+    static func hasWideOpen(_ playerName: String) -> Bool {
+        return players.contains(playerName)
+    }
+}
+
 // MARK: - Achievements Calculator
 struct AchievementsCalculator {
 
@@ -276,6 +316,8 @@ struct AchievementsCalculator {
 
         // Coattails
         achievements.hasCoattails = CoattailsPlayers.hasCoattails(playerName)
+        achievements.hasGalactics = GalacticsPlayers.hasGalactics(playerName)
+        achievements.hasWideOpen = WideOpenPlayers.hasWideOpen(playerName)
 
         // Count MVP, Dong King, and Rookie of Year awards from historical seasons
         let allAwards = getAllSeasonAwards()
