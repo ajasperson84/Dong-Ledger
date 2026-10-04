@@ -16,6 +16,7 @@ struct BatchStatsEntryView: View {
     @State private var isLoading = true
     @State private var isSaving = false
     @State private var expandedPlayerId: String?
+    @State private var saveError: String?
 
     // Only show players who were selected for this week
     var playersThisWeek: [Player] {
@@ -112,6 +113,14 @@ struct BatchStatsEntryView: View {
         .task {
             await loadAllStats()
         }
+        .alert("COULDN'T SAVE", isPresented: Binding(
+            get: { saveError != nil },
+            set: { if !$0 { saveError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(saveError ?? "")
+        }
     }
 
     private func binding(for playerId: String, player: Player) -> Binding<WeeklyStats> {
@@ -154,6 +163,9 @@ struct BatchStatsEntryView: View {
                 }
             } catch {
                 print("Error saving stats: \(error)")
+                await MainActor.run {
+                    saveError = error.localizedDescription
+                }
             }
             await MainActor.run {
                 isSaving = false

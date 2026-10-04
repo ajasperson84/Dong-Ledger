@@ -21,6 +21,7 @@ struct PlayerStatsEntryView: View {
     @State private var wins = 0
     @State private var isLoading = true
     @State private var isSaving = false
+    @State private var saveError: String?
 
     var body: some View {
         ZStack {
@@ -89,6 +90,14 @@ struct PlayerStatsEntryView: View {
         .task {
             await loadStats()
         }
+        .alert("COULDN'T SAVE", isPresented: Binding(
+            get: { saveError != nil },
+            set: { if !$0 { saveError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(saveError ?? "")
+        }
     }
 
     /// "SATURDAY · SEP 26 · WEEK 4 · THE AIRFIELD"
@@ -120,6 +129,7 @@ struct PlayerStatsEntryView: View {
             wins = loadedStats.wins
         } catch {
             print("Error loading stats: \(error)")
+            saveError = error.localizedDescription
         }
         isLoading = false
     }
@@ -142,6 +152,9 @@ struct PlayerStatsEntryView: View {
                 }
             } catch {
                 print("Error saving stats: \(error)")
+                await MainActor.run {
+                    saveError = error.localizedDescription
+                }
             }
             await MainActor.run {
                 isSaving = false

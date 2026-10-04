@@ -2,7 +2,7 @@
 //  WeeklyPlayerSelectionView.swift
 //  Dong Country Ledger 5000
 //
-//  Quick player selection for weekly games
+//  Pick who played this week and the field (Stickball Rich skin)
 //
 
 import SwiftUI
@@ -14,203 +14,191 @@ struct WeeklyPlayerSelectionView: View {
     @State private var selectedPlayerIds: Set<String> = []
     @State private var selectedField: GameField? = nil
     @State private var isSaving = false
+    @State private var saveError: String?
 
     var body: some View {
-        NavigationStack {
-            ZStack {
-                TronGridBackground()
+        ZStack(alignment: .bottom) {
+            SRBackground()
 
-                VStack(spacing: 0) {
-                    // Header
-                    VStack(spacing: 4) {
-                        // Special event name if any
-                        if let gameWeek = statsService.currentGameWeek, let event = gameWeek.specialEvent {
-                            Text(event.rawValue.uppercased())
-                                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                                .foregroundColor(TronColors.magenta)
-                                .neonGlow(color: TronColors.magenta, radius: 5)
-                        }
-
-                        Text("WEEK \(statsService.currentWeekNumber)")
-                            .font(.system(size: 32, weight: .bold, design: .monospaced))
-                            .foregroundColor(TronColors.cyan)
-                            .neonGlow(color: TronColors.cyan, radius: 10)
-
-                        // Show the date
-                        if let gameWeek = statsService.currentGameWeek {
-                            Text(gameWeek.formattedDate.uppercased())
-                                .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                .foregroundColor(TronColors.secondaryText)
-                        }
-
-                        Text("SELECT PLAYERS WHO PLAYED")
-                            .font(.system(size: 11, weight: .medium, design: .monospaced))
-                            .foregroundColor(TronColors.dimText)
-                            .padding(.top, 4)
+            ScrollView {
+                VStack(spacing: 10) {
+                    HStack {
+                        Button(action: { dismiss() }) { Color.clear }
+                            .buttonStyle(.srImage("Cancel_Button"))
+                            .frame(width: 104, height: 44)
+                            .accessibilityLabel("Cancel")
+                        Spacer()
                     }
-                    .padding(.vertical, 16)
+                    .padding(.horizontal, 12)
+                    .padding(.top, 12)
 
-                    // Field selection
-                    VStack(spacing: 8) {
+                    Image("SR_Weekly_Banner")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .padding(.horizontal, 60)
+                        .accessibilityHidden(true)
+
+                    if let event = statsService.currentGameWeek?.specialEvent {
+                        Text(event.rawValue.uppercased())
+                            .font(SRFont.display(16))
+                            .srGoldText()
+                    }
+
+                    EditorDatePlaque()
+                        .environmentObject(statsService)
+                        .padding(.horizontal, 24)
+
+                    Text("WHO PLAYED?")
+                        .font(SRFont.slab(20))
+                        .foregroundColor(SRColors.text)
+                        .shadow(color: .black, radius: 2, x: 0, y: 1)
+
+                    // Field plates
+                    VStack(spacing: 4) {
                         Text("FIELD")
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
-                            .foregroundColor(TronColors.dimText)
-
-                        HStack(spacing: 8) {
+                            .font(SRFont.display(13))
+                            .srGoldText()
+                        LazyVGrid(columns: [GridItem(.flexible(), spacing: 4), GridItem(.flexible(), spacing: 4)], spacing: 2) {
                             ForEach(GameField.allCases, id: \.self) { field in
                                 FieldChip(
                                     field: field,
                                     isSelected: selectedField == field,
                                     onTap: {
-                                        print("🏟️ Field tapped: \(field.rawValue)")
                                         withAnimation(.easeOut(duration: 0.15)) {
                                             selectedField = field
                                         }
-                                        print("🏟️ selectedField is now: \(selectedField?.rawValue ?? "nil")")
                                     }
                                 )
                             }
                         }
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
+                    .padding(.horizontal, 12)
 
                     // Quick actions
-                    HStack(spacing: 12) {
-                        Button(action: selectAll) {
-                            Text("SELECT ALL")
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundColor(TronColors.green)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(TronColors.cardBackground)
-                                .cornerRadius(6)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(TronColors.green.opacity(0.5), lineWidth: 1)
-                                )
-                        }
-
-                        Button(action: clearAll) {
-                            Text("CLEAR ALL")
-                                .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                .foregroundColor(TronColors.orange)
-                                .padding(.horizontal, 12)
-                                .padding(.vertical, 8)
-                                .background(TronColors.cardBackground)
-                                .cornerRadius(6)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 6)
-                                        .stroke(TronColors.orange.opacity(0.5), lineWidth: 1)
-                                )
-                        }
-
+                    HStack(spacing: 10) {
+                        quickAction("SELECT ALL", action: selectAll)
+                        quickAction("CLEAR ALL", action: clearAll)
                         Spacer()
-
                         Text("\(selectedPlayerIds.count) SELECTED")
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
-                            .foregroundColor(TronColors.cyan)
+                            .font(SRFont.display(14))
+                            .srGoldText()
                     }
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 12)
+                    .padding(.horizontal, 18)
 
-                    // Player grid for quick tapping
-                    ScrollView {
-                        VStack(spacing: 12) {
-                            playerGrid(statsService.laPlayers)
+                    // Players
+                    VStack(spacing: -26) {
+                        ForEach(statsService.laPlayers) { player in
+                            selectionRow(player)
+                        }
+                    }
+                    .padding(.horizontal, 8)
 
-                            // Portland chapter joins for the Coattail Classic
-                            if showsPortland {
-                                Text("PORTLAND CHAPTER")
-                                    .font(.system(size: 11, weight: .bold, design: .monospaced))
-                                    .foregroundColor(TronColors.magenta)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.top, 8)
+                    // Portland chapter joins for the Coattail Classic
+                    if showsPortland {
+                        Text("PORTLAND CHAPTER")
+                            .font(SRFont.slab(16))
+                            .srGoldText()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding(.leading, 20)
+                            .padding(.top, 8)
 
-                                if statsService.portlandPlayers.isEmpty {
-                                    Text("Add Portland players in the Players tab")
-                                        .font(.system(size: 11, design: .monospaced))
-                                        .foregroundColor(TronColors.dimText)
-                                        .frame(maxWidth: .infinity, alignment: .leading)
-                                } else {
-                                    playerGrid(statsService.portlandPlayers)
+                        if statsService.portlandPlayers.isEmpty {
+                            Text("Add Portland players in the Players tab")
+                                .font(SRFont.mono(11))
+                                .foregroundColor(SRColors.gold)
+                        } else {
+                            VStack(spacing: -26) {
+                                ForEach(statsService.portlandPlayers) { player in
+                                    selectionRow(player)
                                 }
                             }
+                            .padding(.horizontal, 8)
                         }
-                        .padding(.horizontal, 16)
-                        .padding(.bottom, 100)
                     }
                 }
+                .padding(.bottom, 140)
+            }
 
-                // Bottom confirm button
-                VStack {
-                    Spacer()
-
-                    Button(action: confirmSelection) {
-                        HStack {
-                            if isSaving {
-                                ProgressView()
-                                    .tint(TronColors.darkBackground)
-                                    .scaleEffect(0.8)
-                            } else {
-                                Image(systemName: "checkmark.circle.fill")
-                                Text("CONFIRM & ENTER STATS")
-                            }
-                        }
-                        .font(.system(size: 14, weight: .bold, design: .monospaced))
-                        .foregroundColor(TronColors.darkBackground)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(selectedPlayerIds.isEmpty ? TronColors.dimText : TronColors.green)
-                        .cornerRadius(12)
-                        .neonGlow(color: selectedPlayerIds.isEmpty ? .clear : TronColors.green, radius: 8)
-                    }
-                    .disabled(selectedPlayerIds.isEmpty || isSaving)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 20)
-                    .background(
-                        LinearGradient(
-                            colors: [TronColors.darkBackground.opacity(0), TronColors.darkBackground],
-                            startPoint: .top,
-                            endPoint: .bottom
-                        )
-                        .frame(height: 100)
-                    )
-                }
-            }
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                    .foregroundColor(TronColors.orange)
-                }
-            }
-            .onAppear {
-                loadExistingSelections()
-            }
+            confirmButton
+        }
+        .onAppear {
+            loadExistingSelections()
+        }
+        .alert("COULDN'T SAVE", isPresented: Binding(
+            get: { saveError != nil },
+            set: { if !$0 { saveError = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(saveError ?? "")
         }
     }
+
+    // MARK: - Pieces
 
     private var showsPortland: Bool {
         statsService.currentGameWeek?.specialEvent?.includesPortland ?? false
     }
 
-    private func playerGrid(_ players: [Player]) -> some View {
-        LazyVGrid(columns: [
-            GridItem(.flexible()),
-            GridItem(.flexible())
-        ], spacing: 8) {
-            ForEach(players) { player in
-                PlayerSelectionTile(
-                    player: player,
-                    isSelected: selectedPlayerIds.contains(player.id ?? ""),
-                    onTap: { togglePlayer(player) }
-                )
+    private func selectionRow(_ player: Player) -> some View {
+        PlayerSelectionTile(
+            player: player,
+            isSelected: selectedPlayerIds.contains(player.id ?? ""),
+            onTap: { togglePlayer(player) }
+        )
+    }
+
+    private func quickAction(_ title: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(SRFont.display(12))
+                .srGoldText()
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .srPlate(cornerRadius: 6)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// Gold primary-action plate pinned to the bottom
+    private var confirmButton: some View {
+        Button(action: confirmSelection) {
+            GeometryReader { geo in
+                ZStack {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: geo.size.height * 0.16, weight: .black))
+                        .foregroundColor(.black.opacity(0.75))
+                        .position(x: geo.size.width * 0.205, y: geo.size.height * 0.48)
+                    Group {
+                        if isSaving {
+                            ProgressView().tint(SRColors.text)
+                        } else {
+                            Text("CONFIRM PLAYERS")
+                                .font(SRFont.slab(geo.size.height * 0.13))
+                                .foregroundColor(SRColors.text)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.6)
+                        }
+                    }
+                    .frame(width: geo.size.width * 0.52)
+                    .position(x: geo.size.width * 0.55, y: geo.size.height * 0.48)
+                }
             }
         }
+        .buttonStyle(.srImage("Primary_Action_Button_Blank"))
+        .padding(.horizontal, 24)
+        .opacity(selectedPlayerIds.isEmpty ? 0.5 : 1)
+        .disabled(selectedPlayerIds.isEmpty || isSaving)
+        .background(alignment: .bottom) {
+            LinearGradient(colors: [.clear, .black.opacity(0.85)], startPoint: .top, endPoint: .bottom)
+                .frame(height: 170)
+                .ignoresSafeArea(edges: .bottom)
+                .allowsHitTesting(false)
+        }
+        .accessibilityLabel("Confirm players")
     }
+
+    // MARK: - Actions
 
     private func togglePlayer(_ player: Player) {
         guard let playerId = player.id else { return }
@@ -247,22 +235,16 @@ struct WeeklyPlayerSelectionView: View {
     private func confirmSelection() {
         isSaving = true
 
-        print("🎯 confirmSelection called")
-        print("🎯 selectedField: \(selectedField?.rawValue ?? "nil")")
-        print("🎯 currentWeekNumber: \(statsService.currentWeekNumber)")
+        Task { @MainActor in
+            var failures: [String] = []
 
-        Task {
             // Save field selection
             if let field = selectedField {
-                print("🎯 Saving field: \(field.rawValue)")
                 do {
                     try await statsService.updateGameWeekField(weekNumber: statsService.currentWeekNumber, field: field)
-                    print("🎯 Field saved successfully")
                 } catch {
-                    print("❌ Error saving field selection: \(error)")
+                    failures.append("Field: \(error.localizedDescription)")
                 }
-            } else {
-                print("⚠️ No field selected, skipping field save")
             }
 
             // Create stats entries for all selected players
@@ -276,19 +258,24 @@ struct WeeklyPlayerSelectionView: View {
                         year: statsService.currentYear
                     )
                 } catch {
-                    print("Error creating stats for \(player.name): \(error)")
+                    failures.append("\(player.name): \(error.localizedDescription)")
                 }
             }
 
-            await MainActor.run {
-                isSaving = false
+            isSaving = false
+            if failures.isEmpty {
                 dismiss()
+            } else {
+                // Stay open so nothing silently disappears
+                saveError = failures.prefix(3).joined(separator: "\n")
+                    + (failures.count > 3 ? "\n…and \(failures.count - 3) more" : "")
             }
         }
     }
 }
 
 // MARK: - Field Chip
+/// Blank category plate with the field's icon and name; Uncle Kimmy's Playhouse is the night game
 struct FieldChip: View {
     let field: GameField
     let isSelected: Bool
@@ -296,31 +283,32 @@ struct FieldChip: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 4) {
-                Image(systemName: fieldIcon)
-                    .font(.system(size: 10))
-                Text(field.shortName)
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-            }
-            .foregroundColor(isSelected ? TronColors.darkBackground : TronColors.secondaryText)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 8)
-            .background(isSelected ? TronColors.green : TronColors.surfaceBackground)
-            .cornerRadius(8)
-            .overlay(
-                RoundedRectangle(cornerRadius: 8)
-                    .stroke(isSelected ? TronColors.green : TronColors.gridLine.opacity(0.3), lineWidth: 1)
-            )
+            Image(isSelected ? "SR_Selected_Blank" : "SR_Unselected_Blank")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .overlay(
+                    HStack(spacing: 5) {
+                        Image(systemName: field.icon)
+                            .font(.system(size: 13))
+                            .foregroundColor(field.isNightGame ? SRColors.goldLight : SRColors.gold)
+                        Text(field.rawValue.uppercased())
+                            .font(SRFont.display(13))
+                            .foregroundColor(SRColors.text)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.5)
+                    }
+                    .padding(.horizontal, 22)
+                )
+                .frame(height: isSelected ? 52 : 46)
         }
         .buttonStyle(.plain)
-    }
-
-    var fieldIcon: String {
-        return field.icon
+        .accessibilityLabel(field.isNightGame ? "\(field.rawValue), night game" : field.rawValue)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
 // MARK: - Player Selection Tile
+/// Gold accordion row with a diamond checkbox
 struct PlayerSelectionTile: View {
     let player: Player
     let isSelected: Bool
@@ -328,43 +316,28 @@ struct PlayerSelectionTile: View {
 
     var body: some View {
         Button(action: onTap) {
-            HStack(spacing: 10) {
-                // Selection indicator
-                ZStack {
-                    Circle()
-                        .fill(isSelected ? TronColors.green : TronColors.surfaceBackground)
-                        .frame(width: 28, height: 28)
+            SRArtPlate(isSelected ? "SR_Accordion_Row_Selected" : "SR_Accordion_Row_Unselected") { size in
+                HStack(spacing: 12) {
+                    Image(isSelected ? "SR_PIN_Cell_Filled" : "SR_PIN_Cell_Empty")
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: size.height * 0.40, height: size.height * 0.40)
 
-                    Circle()
-                        .stroke(isSelected ? TronColors.green : TronColors.gridLine, lineWidth: 2)
-                        .frame(width: 28, height: 28)
+                    Text(player.name.uppercased())
+                        .font(SRFont.display(size.height * 0.24))
+                        .foregroundColor(isSelected ? SRColors.text : SRColors.text.opacity(0.7))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.6)
 
-                    if isSelected {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(TronColors.darkBackground)
-                    }
+                    Spacer(minLength: 0)
                 }
-                .neonGlow(color: isSelected ? TronColors.green : .clear, radius: 5)
-
-                // Player name
-                Text(player.name.uppercased())
-                    .font(.system(size: 12, weight: .bold, design: .monospaced))
-                    .foregroundColor(isSelected ? TronColors.primaryText : TronColors.secondaryText)
-                    .lineLimit(1)
-
-                Spacer()
+                .padding(.leading, size.width * 0.07)
+                .padding(.trailing, size.width * 0.06)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 14)
-            .background(isSelected ? TronColors.cardBackground : TronColors.surfaceBackground)
-            .cornerRadius(10)
-            .overlay(
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(isSelected ? TronColors.green.opacity(0.5) : TronColors.gridLine.opacity(0.3), lineWidth: 1)
-            )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel(player.name)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 
