@@ -34,6 +34,11 @@ struct ContentView: View {
             tab(.historic) { PastSeasonsView() }
             tab(.players) { PlayersView() }
         }
+        .overlay(alignment: .top) {
+            if statsService.isTestMode {
+                TestModeBanner()
+            }
+        }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             SRTabBar(selection: $selectedTab)
         }
@@ -46,6 +51,21 @@ struct ContentView: View {
             .opacity(isSelected ? 1 : 0)
             .allowsHitTesting(isSelected)
             .accessibilityHidden(!isSelected)
+    }
+}
+
+// MARK: - Test Mode Banner
+/// Always-visible reminder that stats entered now are test data
+struct TestModeBanner: View {
+    var body: some View {
+        Text("TEST MODE · NOT LEAGUE DATA")
+            .font(SRFont.display(12))
+            .foregroundColor(.black)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 4)
+            .background(Capsule().fill(SRColors.pink))
+            .shadow(color: .black.opacity(0.6), radius: 4)
+            .allowsHitTesting(false)
     }
 }
 

@@ -59,7 +59,61 @@ class StatsService: ObservableObject {
 
     /// Stats can only be entered for weeks that have happened and aren't blocked out
     var canEnterStatsForCurrentWeek: Bool {
-        !isViewingFutureWeek && !(currentGameWeek?.isBlockedOut ?? false)
+        !(currentGameWeek?.isBlockedOut ?? false) && (isTestMode || !isViewingFutureWeek)
+    }
+
+    // MARK: - Test Mode
+    /// Debug builds only (running from Xcode): lets admins enter stats for upcoming
+    /// weeks. Test stats and field picks are kept in separate "test_" collections so
+    /// the league's real data, and older app versions reading it, are never touched.
+    @Published var isTestMode: Bool = StatsService.savedTestMode {
+        didSet {
+            guard isTestMode != oldValue else { return }
+            UserDefaults.standard.set(isTestMode, forKey: Self.testModeKey)
+            restartListeners()
+        }
+    }
+
+    static var testModeAvailable: Bool {
+        #if DEBUG
+        return true
+        #else
+        return false
+        #endif
+    }
+
+    private static let testModeKey = "testMode"
+
+    private static var savedTestMode: Bool {
+        testModeAvailable && UserDefaults.standard.bool(forKey: testModeKey)
+    }
+
+    private var statsCollection: String { isTestMode ? "test_weeklyStats" : "weeklyStats" }
+    private var weekInfoCollection: String { isTestMode ? "test_gameWeekInfo" : "gameWeekInfo" }
+
+    /// Deletes everything entered in Test Mode
+    func clearTestData() async throws {
+        for name in ["test_weeklyStats", "test_gameWeekInfo"] {
+            let snapshot = try await db.collection(name).getDocuments()
+            // Firestore batches hold at most 500 writes
+            for start in stride(from: 0, to: snapshot.documents.count, by: 450) {
+                let batch = db.batch()
+                for doc in snapshot.documents[start..<min(start + 450, snapshot.documents.count)] {
+                    batch.deleteDocument(doc.reference)
+                }
+                try await batch.commit()
+            }
+        }
+    }
+
+    private func restartListeners() {
+        statsListener?.remove()
+        gameWeekInfoListener?.remove()
+        playersListener?.remove()
+        weeklyStats = []
+        gameWeekInfos = [:]
+        calculateSeasonStats()
+        setupListeners()
     }
 
     /// LA chapter roster (excludes Portland visitors)
@@ -131,9 +185,12 @@ class StatsService: ObservableObject {
             }
 
         // Listen for all stats (we filter by season in memory)
-        statsListener = db.collection("weeklyStats")
+        let statsSource = statsCollection
+        statsListener = db.collection(statsCollection)
             .addSnapshotListener { [weak self] snapshot, error in
                 Task { @MainActor in
+                    // Ignore late updates from before a Test Mode switch
+                    guard self?.statsCollection == statsSource else { return }
                     if let error = error {
                         print("❌ Firestore stats error: \(error.localizedDescription)")
                         self?.errorMessage = "Failed to load stats: \(error.localizedDescription)"
@@ -157,9 +214,11 @@ class StatsService: ObservableObject {
             }
 
         // Listen for game week info (field selections)
-        gameWeekInfoListener = db.collection("gameWeekInfo")
+        let weekInfoSource = weekInfoCollection
+        gameWeekInfoListener = db.collection(weekInfoCollection)
             .addSnapshotListener { [weak self] snapshot, error in
                 Task { @MainActor in
+                    guard self?.weekInfoCollection == weekInfoSource else { return }
                     if let error = error {
                         print("❌ Firestore gameWeekInfo error: \(error.localizedDescription)")
                         return
@@ -216,7 +275,7 @@ class StatsService: ObservableObject {
             throw NSError(domain: "StatsService", code: 1, userInfo: [NSLocalizedDescriptionKey: "Player ID is nil"])
         }
 
-        let query = db.collection("weeklyStats")
+        let query = db.collection(statsCollection)
             .whereField("playerId", isEqualTo: playerId)
             .whereField("weekNumber", isEqualTo: week)
             .whereField("year", isEqualTo: year)
@@ -230,7 +289,7 @@ class StatsService: ObservableObject {
         }
 
         var newStats = WeeklyStats(playerId: playerId, playerName: player.name, weekNumber: week, year: year)
-        let docRef = try db.collection("weeklyStats").addDocument(from: newStats)
+        let docRef = try db.collection(statsCollection).addDocument(from: newStats)
         newStats.id = docRef.documentID
         return newStats
     }
@@ -239,7 +298,7 @@ class StatsService: ObservableObject {
         guard let statsId = stats.id else { return }
         var updatedStats = stats
         updatedStats.updatedAt = Date()
-        try db.collection("weeklyStats").document(statsId).setData(from: updatedStats)
+        try db.collection(statsCollection).document(statsId).setData(from: updatedStats)
     }
 
     func batchUpdateStats(_ statsArray: [WeeklyStats]) async throws {
@@ -249,7 +308,7 @@ class StatsService: ObservableObject {
             guard let statsId = stats.id else { continue }
             var updatedStats = stats
             updatedStats.updatedAt = Date()
-            let docRef = db.collection("weeklyStats").document(statsId)
+            let docRef = db.collection(statsCollection).document(statsId)
             try batch.setData(from: updatedStats, forDocument: docRef)
         }
 
@@ -263,7 +322,7 @@ class StatsService: ObservableObject {
             return existing
         }
 
-        let query = db.collection("gameWeekInfo")
+        let query = db.collection(weekInfoCollection)
             .whereField("weekNumber", isEqualTo: weekNumber)
             .whereField("season", isEqualTo: currentSeason)
 
@@ -275,7 +334,7 @@ class StatsService: ObservableObject {
         }
 
         var newInfo = GameWeekInfo(weekNumber: weekNumber)
-        let docRef = try db.collection("gameWeekInfo").addDocument(from: newInfo)
+        let docRef = try db.collection(weekInfoCollection).addDocument(from: newInfo)
         newInfo.id = docRef.documentID
         return newInfo
     }
@@ -289,7 +348,7 @@ class StatsService: ObservableObject {
         info.setField(field)
 
         if let infoId = info.id {
-            try db.collection("gameWeekInfo").document(infoId).setData(from: info)
+            try db.collection(weekInfoCollection).document(infoId).setData(from: info)
 
             // Update local cache immediately so UI reflects the change
             gameWeekInfos[weekNumber] = info

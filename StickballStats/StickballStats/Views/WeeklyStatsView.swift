@@ -76,7 +76,7 @@ struct WeeklyStatsView: View {
                         if let gameWeek = statsService.currentGameWeek, gameWeek.isBlockedOut {
                             BlockedOutWeekView(gameWeek: gameWeek)
                                 .padding(.vertical, 24)
-                        } else if statsService.isViewingFutureWeek, let gameWeek = statsService.currentGameWeek {
+                        } else if statsService.isViewingFutureWeek, !statsService.isTestMode, let gameWeek = statsService.currentGameWeek {
                             UpcomingWeekView(gameWeek: gameWeek)
                                 .environmentObject(statsService)
                                 .padding(.vertical, 24)

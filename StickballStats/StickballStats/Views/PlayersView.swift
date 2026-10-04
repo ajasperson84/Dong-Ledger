@@ -66,6 +66,14 @@ struct PlayersView: View {
                                 .buttonStyle(.srImage("Add_New_Player_Button"))
                                 .padding(.horizontal, 40)
                                 .accessibilityLabel("Add new player")
+
+                            // Test Mode controls (Xcode/debug builds only)
+                            if StatsService.testModeAvailable {
+                                TestModePanel()
+                                    .environmentObject(statsService)
+                                    .padding(.horizontal, 24)
+                                    .padding(.bottom, 8)
+                            }
                         }
 
                         if statsService.players.isEmpty {
@@ -161,6 +169,73 @@ struct PlayersView: View {
             } catch {
                 print("Error deleting player: \(error)")
             }
+        }
+    }
+}
+
+// MARK: - Test Mode Panel
+/// Debug-build switch for entering stats on upcoming weeks without touching league data
+struct TestModePanel: View {
+    @EnvironmentObject var statsService: StatsService
+    @State private var isClearing = false
+    @State private var confirmClear = false
+    @State private var message: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Toggle(isOn: $statsService.isTestMode) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("TEST MODE")
+                        .font(SRFont.display(15))
+                        .srGoldText()
+                    Text("Enter stats on upcoming weeks. Saved separately from league data.")
+                        .font(SRFont.mono(10))
+                        .foregroundColor(SRColors.text.opacity(0.85))
+                }
+            }
+            .tint(SRColors.pink)
+
+            if statsService.isTestMode {
+                Button(action: { confirmClear = true }) {
+                    HStack(spacing: 6) {
+                        if isClearing {
+                            ProgressView().tint(SRColors.pink)
+                        } else {
+                            Image(systemName: "trash")
+                        }
+                        Text("CLEAR TEST DATA")
+                    }
+                    .font(SRFont.display(13))
+                    .foregroundColor(SRColors.pink)
+                }
+                .disabled(isClearing)
+            }
+
+            if let message {
+                Text(message)
+                    .font(SRFont.mono(10))
+                    .foregroundColor(SRColors.gold)
+            }
+        }
+        .padding(14)
+        .srPlate(glow: SRColors.pink)
+        .confirmationDialog("Delete all test stats and test field picks?", isPresented: $confirmClear, titleVisibility: .visible) {
+            Button("Clear Test Data", role: .destructive, action: clearTestData)
+            Button("Cancel", role: .cancel) {}
+        }
+    }
+
+    private func clearTestData() {
+        isClearing = true
+        message = nil
+        Task { @MainActor in
+            do {
+                try await statsService.clearTestData()
+                message = "Test data cleared."
+            } catch {
+                message = "Couldn't clear test data: \(error.localizedDescription)"
+            }
+            isClearing = false
         }
     }
 }
