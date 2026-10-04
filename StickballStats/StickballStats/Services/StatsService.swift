@@ -294,6 +294,12 @@ class StatsService: ObservableObject {
         return newStats
     }
 
+    /// Takes a player out of a week's game (deletes their entry for that week)
+    func removeWeeklyStats(_ stats: WeeklyStats) async throws {
+        guard let statsId = stats.id else { return }
+        try await db.collection(statsCollection).document(statsId).delete()
+    }
+
     func updateWeeklyStats(_ stats: WeeklyStats) async throws {
         guard let statsId = stats.id else { return }
         var updatedStats = stats

@@ -15,6 +15,7 @@ struct WeeklyPlayerSelectionView: View {
     @State private var selectedField: GameField? = nil
     @State private var isSaving = false
     @State private var saveError: String?
+    @State private var removalsWithStats: [String] = []
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -132,6 +133,34 @@ struct WeeklyPlayerSelectionView: View {
         } message: {
             Text(saveError ?? "")
         }
+        .confirmationDialog(
+            "Remove \(removalsWithStats.joined(separator: ", ")) from this week?",
+            isPresented: Binding(
+                get: { !removalsWithStats.isEmpty },
+                set: { if !$0 { removalsWithStats = [] } }
+            ),
+            titleVisibility: .visible
+        ) {
+            Button("Remove and Delete Their Stats", role: .destructive) {
+                removalsWithStats = []
+                confirmSelection()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Stats already entered for them this week will be deleted.")
+        }
+    }
+
+    /// Entries for players who were in this week's game but are now unchecked
+    private var entriesToRemove: [WeeklyStats] {
+        statsService.getWeeklyStatsForWeek(statsService.currentWeek)
+            .filter { !selectedPlayerIds.contains($0.playerId) }
+    }
+
+    /// Something to save: players picked, players to remove, or a field change
+    private var hasChanges: Bool {
+        !selectedPlayerIds.isEmpty || !entriesToRemove.isEmpty
+            || selectedField != statsService.getFieldForWeek(statsService.currentWeekNumber)
     }
 
     // MARK: - Pieces
@@ -162,7 +191,7 @@ struct WeeklyPlayerSelectionView: View {
 
     /// Gold primary-action plate pinned to the bottom
     private var confirmButton: some View {
-        Button(action: confirmSelection) {
+        Button(action: confirmTapped) {
             GeometryReader { geo in
                 ZStack {
                     Image(systemName: "checkmark")
@@ -173,7 +202,7 @@ struct WeeklyPlayerSelectionView: View {
                         if isSaving {
                             ProgressView().tint(SRColors.text)
                         } else {
-                            Text("CONFIRM PLAYERS")
+                            Text("SAVE PLAYERS")
                                 .font(SRFont.slab(geo.size.height * 0.13))
                                 .foregroundColor(SRColors.text)
                                 .lineLimit(1)
@@ -187,8 +216,8 @@ struct WeeklyPlayerSelectionView: View {
         }
         .buttonStyle(.srImage("Primary_Action_Button_Blank"))
         .padding(.horizontal, 24)
-        .opacity(selectedPlayerIds.isEmpty ? 0.5 : 1)
-        .disabled(selectedPlayerIds.isEmpty || isSaving)
+        .opacity(hasChanges ? 1 : 0.5)
+        .disabled(!hasChanges || isSaving)
         .background(alignment: .bottom) {
             LinearGradient(colors: [.clear, .black.opacity(0.85)], startPoint: .top, endPoint: .bottom)
                 .frame(height: 170)
@@ -232,8 +261,21 @@ struct WeeklyPlayerSelectionView: View {
         selectedField = statsService.getFieldForWeek(statsService.currentWeekNumber)
     }
 
+    /// Asks first if unchecking would delete recorded stats
+    private func confirmTapped() {
+        let withStats = entriesToRemove.filter { $0.hasAnyStats }
+        if withStats.isEmpty {
+            confirmSelection()
+        } else {
+            removalsWithStats = withStats.map { entry in
+                statsService.players.first { $0.id == entry.playerId }?.name ?? entry.playerName
+            }
+        }
+    }
+
     private func confirmSelection() {
         isSaving = true
+        let removals = entriesToRemove
 
         Task { @MainActor in
             var failures: [String] = []
@@ -244,6 +286,15 @@ struct WeeklyPlayerSelectionView: View {
                     try await statsService.updateGameWeekField(weekNumber: statsService.currentWeekNumber, field: field)
                 } catch {
                     failures.append("Field: \(error.localizedDescription)")
+                }
+            }
+
+            // Take unchecked players out of this week's game
+            for entry in removals {
+                do {
+                    try await statsService.removeWeeklyStats(entry)
+                } catch {
+                    failures.append("\(entry.playerName): \(error.localizedDescription)")
                 }
             }
 

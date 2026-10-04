@@ -46,6 +46,11 @@ struct WeeklyStats: Identifiable, Codable, Hashable {
         return "\(year)-W\(String(format: "%02d", weekNumber))"
     }
 
+    /// True once anything has been recorded for this player this week
+    var hasAnyStats: Bool {
+        dongs + drops + doublePlays + salamies + wins > 0
+    }
+
     // Total points (for leaderboard sorting)
     var totalPoints: Int {
         return dongs + salamies + wins - drops - doublePlays
