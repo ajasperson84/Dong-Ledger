@@ -386,6 +386,7 @@ struct PlayerSelectionTile: View {
                 .padding(.trailing, size.width * 0.06)
             }
         }
+        .contentShape(SRBandShape(top: 0.27, bottom: 0.72))
         .buttonStyle(.plain)
         .accessibilityLabel(player.name)
         .accessibilityAddTraits(isSelected ? .isSelected : [])

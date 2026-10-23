@@ -208,6 +208,22 @@ struct SRArtPlate<Content: View>: View {
     }
 }
 
+/// Tap area limited to a horizontal band of a row's art (the visible plate), so the
+/// transparent glow of overlapping rows never catches a neighbour's tap
+struct SRBandShape: Shape {
+    var top: CGFloat
+    var bottom: CGFloat
+
+    func path(in rect: CGRect) -> Path {
+        Path(CGRect(
+            x: rect.minX,
+            y: rect.minY + rect.height * top,
+            width: rect.width,
+            height: rect.height * (bottom - top)
+        ))
+    }
+}
+
 /// Stretchy black-marble plate with a gold edge, for panels without dedicated art
 struct SRPlate: ViewModifier {
     var glow: Color = SRColors.gold

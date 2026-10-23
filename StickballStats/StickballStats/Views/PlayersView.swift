@@ -255,7 +255,7 @@ struct PlayerManagementRow: View {
             ZStack(alignment: .topLeading) {
                 // Whole-row tap opens the career profile
                 Color.clear
-                    .contentShape(Rectangle())
+                    .contentShape(SRBandShape(top: 0.26, bottom: 0.78))
                     .onTapGesture(perform: onTap)
 
                 Group {

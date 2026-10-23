@@ -59,6 +59,7 @@ struct SeasonRowButtonStyle: ButtonStyle {
             .resizable()
             .aspectRatio(contentMode: .fit)
             .overlay(configuration.label)
+            .contentShape(SRBandShape(top: 0.22, bottom: 0.79))
     }
 }
 
