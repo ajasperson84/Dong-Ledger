@@ -383,6 +383,16 @@ struct CareerStats: Identifiable {
     var totalDongRobs: Int = 0
     var seasonsPlayed: Int = 0
 
+    /// Adds an admin correction, never letting a total drop below zero
+    mutating func apply(_ adjustment: CareerAdjustment) {
+        totalDongs = max(0, totalDongs + adjustment.dongs)
+        totalDrops = max(0, totalDrops + adjustment.drops)
+        totalDoublePlays = max(0, totalDoublePlays + adjustment.doublePlays)
+        totalSalamies = max(0, totalSalamies + adjustment.salamies)
+        totalWins = max(0, totalWins + adjustment.wins)
+        totalDongRobs = max(0, totalDongRobs + adjustment.dongRobs)
+    }
+
     mutating func add(season: HistoricalPlayerSeasonStats) {
         totalDongs += season.dongs
         totalDrops += season.drops
@@ -681,8 +691,9 @@ struct HistoricalData {
     }
 
     /// Calculate career stats for all players across all seasons
-    /// Pass currentSeasonStats to include the current season from Firebase
-    static func calculateCareerStats(currentSeasonStats: [YearlyStats] = []) -> [CareerStats] {
+    /// Pass currentSeasonStats to include the current season from Firebase,
+    /// and adjustments to apply admin corrections (keyed by canonical name)
+    static func calculateCareerStats(currentSeasonStats: [YearlyStats] = [], adjustments: [String: CareerAdjustment] = [:]) -> [CareerStats] {
         var careerDict: [String: CareerStats] = [:]
 
         for season in pastSeasons {
@@ -706,6 +717,14 @@ struct HistoricalData {
             }
 
             careerDict[canonicalName]?.addYearlyStats(yearly)
+        }
+
+        // Admin corrections
+        for (name, adjustment) in adjustments {
+            if careerDict[name] == nil {
+                careerDict[name] = CareerStats(playerName: name)
+            }
+            careerDict[name]?.apply(adjustment)
         }
 
         return Array(careerDict.values).sorted { $0.totalDongs > $1.totalDongs }

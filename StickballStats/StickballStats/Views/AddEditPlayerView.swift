@@ -20,6 +20,11 @@ struct AddEditPlayerView: View {
     @State private var errorMessage = ""
     @FocusState private var isNameFocused: Bool
 
+    // Career totals and badges as shown on the profile (editing existing LA players)
+    @State private var careerValues = CareerEditValues()
+    @State private var loadedCareerValues: CareerEditValues?
+    @State private var baseCareerValues: CareerEditValues?
+
     var isEditing: Bool { player != nil }
 
     var body: some View {
@@ -75,6 +80,10 @@ struct AddEditPlayerView: View {
                     .srPlate(glow: SRColors.purple)
                     .padding(.horizontal, 24)
 
+                    if loadedCareerValues != nil {
+                        careerEditor
+                    }
+
                     // Add Player / Save Changes
                     Button(action: savePlayer) {
                         GeometryReader { geo in
@@ -111,6 +120,7 @@ struct AddEditPlayerView: View {
             if let player = player {
                 name = player.name
                 isPortland = player.isPortland
+                loadCareerValues(for: player)
             }
         }
         .alert("ERROR", isPresented: $showingError) {
@@ -118,6 +128,102 @@ struct AddEditPlayerView: View {
         } message: {
             Text(errorMessage)
         }
+    }
+
+    // MARK: - Career & Badges
+
+    /// Career stats are tracked under the player's canonical name (e.g. "Candy" -> "Candyman")
+    private var canonicalName: String {
+        PlayerAliases.canonicalName(for: player?.name ?? name)
+    }
+
+    private func loadCareerValues(for player: Player) {
+        guard !player.isPortland else { return }
+        let canonical = PlayerAliases.canonicalName(for: player.name)
+
+        // Calculated values with no admin correction
+        let base = HistoricalData.calculateCareerStats(currentSeasonStats: statsService.yearlyStats)
+            .first { $0.playerName == canonical } ?? CareerStats(playerName: canonical)
+        let baseValues = CareerEditValues(
+            stats: base,
+            achievements: AchievementsCalculator.calculateAchievements(for: canonical, careerStats: base)
+        )
+
+        // What the profile currently shows, including any saved correction
+        var current = baseValues
+        if let adjustment = statsService.careerAdjustments[canonical] {
+            var adjusted = base
+            adjusted.apply(adjustment)
+            current = CareerEditValues(
+                stats: adjusted,
+                achievements: AchievementsCalculator.calculateAchievements(for: canonical, careerStats: adjusted, adjustment: adjustment)
+            )
+        }
+
+        baseCareerValues = baseValues
+        loadedCareerValues = current
+        careerValues = current
+    }
+
+    private var careerEditor: some View {
+        VStack(spacing: 10) {
+            Text("CAREER TOTALS")
+                .font(SRFont.slab(18))
+                .srGoldText()
+
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 0), GridItem(.flexible(), spacing: 0)], spacing: 0) {
+                GoldStepper(title: "DONGS", value: $careerValues.dongs)
+                GoldStepper(title: "DOUBLE PLAYS", value: $careerValues.doublePlays)
+                GoldStepper(title: "SALAMIES", value: $careerValues.salamies)
+                GoldStepper(title: "DONG ROBS", value: $careerValues.dongRobs)
+                GoldStepper(title: "WINS", value: $careerValues.wins)
+                GoldStepper(title: "DROPS", value: $careerValues.drops)
+                GoldStepper(title: "YFSLA TITLES", value: $careerValues.yfslaChampionships)
+            }
+            .srPlate(glow: SRColors.purple)
+
+            Text("BADGES")
+                .font(SRFont.slab(18))
+                .srGoldText()
+                .padding(.top, 8)
+
+            VStack(spacing: 4) {
+                LazyVGrid(columns: [GridItem(.flexible(), spacing: 0), GridItem(.flexible(), spacing: 0)], spacing: 0) {
+                    GoldStepper(title: "MVP", value: $careerValues.mvp)
+                    GoldStepper(title: "DONG KING", value: $careerValues.dongKing)
+                    GoldStepper(title: "ROOKIE OF YEAR", value: $careerValues.rookieOfYear)
+                }
+
+                badgeToggle("COATTAILS", isOn: $careerValues.coattails)
+                badgeToggle("GALACTICS", isOn: $careerValues.galactics)
+                badgeToggle("WIDE OPEN", isOn: $careerValues.wideOpen)
+
+                Text("100–500 Club and Salami Club badges follow career dongs and salamies.")
+                    .font(SRFont.mono(10))
+                    .foregroundColor(SRColors.text.opacity(0.8))
+                    .multilineTextAlignment(.center)
+                    .padding(10)
+            }
+            .srPlate(glow: SRColors.purple)
+
+            if careerValues != loadedCareerValues {
+                Text("Tap Save Changes to apply")
+                    .font(SRFont.mono(11))
+                    .foregroundColor(SRColors.pink)
+            }
+        }
+        .padding(.horizontal, 12)
+    }
+
+    private func badgeToggle(_ title: String, isOn: Binding<Bool>) -> some View {
+        Toggle(isOn: isOn) {
+            Text(title)
+                .font(SRFont.display(15))
+                .foregroundColor(SRColors.text)
+        }
+        .tint(SRColors.purple)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 4)
     }
 
     private var trimmedName: String {
@@ -138,6 +244,13 @@ struct AddEditPlayerView: View {
                     existingPlayer.name = trimmedName
                     existingPlayer.teamName = isPortland ? Player.portlandChapter : nil
                     try await statsService.updatePlayer(existingPlayer)
+
+                    // Career / badge corrections, saved as differences from the calculated values
+                    if let loaded = loadedCareerValues, let base = baseCareerValues, careerValues != loaded {
+                        try await statsService.saveCareerAdjustment(
+                            careerValues.adjustment(for: canonicalName, base: base)
+                        )
+                    }
                 } else {
                     // Add new player
                     try await statsService.addPlayer(
@@ -160,6 +273,61 @@ struct AddEditPlayerView: View {
                 isSaving = false
             }
         }
+    }
+}
+
+// MARK: - Career Edit Values
+/// The career totals and badges an admin can edit, as the profile shows them
+struct CareerEditValues: Equatable {
+    var dongs = 0
+    var drops = 0
+    var doublePlays = 0
+    var salamies = 0
+    var wins = 0
+    var dongRobs = 0
+    var yfslaChampionships = 0
+    var mvp = 0
+    var dongKing = 0
+    var rookieOfYear = 0
+    var coattails = false
+    var galactics = false
+    var wideOpen = false
+
+    init() {}
+
+    init(stats: CareerStats, achievements: PlayerAchievements) {
+        dongs = stats.totalDongs
+        drops = stats.totalDrops
+        doublePlays = stats.totalDoublePlays
+        salamies = stats.totalSalamies
+        wins = stats.totalWins
+        dongRobs = stats.totalDongRobs
+        yfslaChampionships = achievements.yfslaChampCount
+        mvp = achievements.mvpCount
+        dongKing = achievements.dongKingCount
+        rookieOfYear = achievements.rookieOfYearCount
+        coattails = achievements.hasCoattails
+        galactics = achievements.hasGalactics
+        wideOpen = achievements.hasWideOpen
+    }
+
+    /// The correction that turns the calculated values (base) into these
+    func adjustment(for playerName: String, base: CareerEditValues) -> CareerAdjustment {
+        var adjustment = CareerAdjustment(playerName: playerName)
+        adjustment.dongs = dongs - base.dongs
+        adjustment.drops = drops - base.drops
+        adjustment.doublePlays = doublePlays - base.doublePlays
+        adjustment.salamies = salamies - base.salamies
+        adjustment.wins = wins - base.wins
+        adjustment.dongRobs = dongRobs - base.dongRobs
+        adjustment.yfslaChampionships = yfslaChampionships - base.yfslaChampionships
+        adjustment.mvp = mvp - base.mvp
+        adjustment.dongKing = dongKing - base.dongKing
+        adjustment.rookieOfYear = rookieOfYear - base.rookieOfYear
+        adjustment.coattails = coattails == base.coattails ? nil : coattails
+        adjustment.galactics = galactics == base.galactics ? nil : galactics
+        adjustment.wideOpen = wideOpen == base.wideOpen ? nil : wideOpen
+        return adjustment
     }
 }
 

@@ -19,7 +19,7 @@ struct PlayersView: View {
 
     // Get all career stats for lookup (includes current season from Firebase)
     private var allCareerStats: [CareerStats] {
-        HistoricalData.calculateCareerStats(currentSeasonStats: statsService.yearlyStats)
+        HistoricalData.calculateCareerStats(currentSeasonStats: statsService.yearlyStats, adjustments: statsService.careerAdjustments)
     }
 
     private func playerRow(_ player: Player, careerStats: CareerStats?) -> some View {
@@ -141,7 +141,7 @@ struct PlayersView: View {
                     .environmentObject(adminService)
             }
             .sheet(item: $selectedCareerStats) { stats in
-                PlayerCareerDetailView(stats: stats)
+                PlayerCareerDetailView(stats: stats, adjustment: statsService.careerAdjustments[stats.playerName])
             }
         }
     }

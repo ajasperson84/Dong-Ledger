@@ -15,10 +15,12 @@ class StatsService: ObservableObject {
     private var playersListener: ListenerRegistration?
     private var statsListener: ListenerRegistration?
     private var gameWeekInfoListener: ListenerRegistration?
+    private var adjustmentsListener: ListenerRegistration?
 
     @Published var players: [Player] = []
     @Published var weeklyStats: [WeeklyStats] = []
     @Published var yearlyStats: [YearlyStats] = []
+    @Published var careerAdjustments: [String: CareerAdjustment] = [:]  // canonical name -> admin correction
     @Published var gameWeekInfos: [Int: GameWeekInfo] = [:]  // weekNumber -> info
     @Published var lastFieldUpdate: Date = Date()  // Triggers view refresh when field changes
     @Published var isLoading = false
@@ -110,6 +112,7 @@ class StatsService: ObservableObject {
         statsListener?.remove()
         gameWeekInfoListener?.remove()
         playersListener?.remove()
+        adjustmentsListener?.remove()
         weeklyStats = []
         gameWeekInfos = [:]
         calculateSeasonStats()
@@ -149,11 +152,30 @@ class StatsService: ObservableObject {
         playersListener?.remove()
         statsListener?.remove()
         gameWeekInfoListener?.remove()
+        adjustmentsListener?.remove()
     }
 
     // MARK: - Real-time Listeners
 
     private func setupListeners() {
+        // Admin career / badge corrections (always league data, even in Test Mode)
+        adjustmentsListener = db.collection("careerAdjustments")
+            .addSnapshotListener { [weak self] snapshot, error in
+                Task { @MainActor in
+                    if let error = error {
+                        print("❌ Firestore careerAdjustments error: \(error.localizedDescription)")
+                        return
+                    }
+                    var adjustments: [String: CareerAdjustment] = [:]
+                    for doc in snapshot?.documents ?? [] {
+                        if let adjustment = try? doc.data(as: CareerAdjustment.self) {
+                            adjustments[adjustment.playerName] = adjustment
+                        }
+                    }
+                    self?.careerAdjustments = adjustments
+                }
+            }
+
         // Listen for player changes
         playersListener = db.collection("players")
             .addSnapshotListener { [weak self] snapshot, error in
@@ -292,6 +314,18 @@ class StatsService: ObservableObject {
         let docRef = try db.collection(statsCollection).addDocument(from: newStats)
         newStats.id = docRef.documentID
         return newStats
+    }
+
+    /// Saves (or clears) an admin correction to a player's career totals and badges
+    func saveCareerAdjustment(_ adjustment: CareerAdjustment) async throws {
+        let doc = db.collection("careerAdjustments").document(adjustment.playerName)
+        if adjustment.isEmpty {
+            try await doc.delete()
+        } else {
+            var updated = adjustment
+            updated.updatedAt = Date()
+            try doc.setData(from: updated)
+        }
     }
 
     /// Takes a player out of a week's game (deletes their entry for that week)

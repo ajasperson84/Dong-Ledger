@@ -239,6 +239,47 @@ struct SeasonAwards: Identifiable {
     var rookieOfYearDongs: Int = 0
 }
 
+// MARK: - Admin Career Adjustments
+/// Admin corrections to a player's career totals and badges, stored in Firestore
+/// ("careerAdjustments", one document per canonical player name). Totals and award
+/// counts are differences added on top of the calculated values, so careers keep
+/// growing with new games; the one-off badges are on/off overrides (nil = default).
+struct CareerAdjustment: Codable, Equatable {
+    var playerName: String
+
+    // Career total differences
+    var dongs: Int = 0
+    var drops: Int = 0
+    var doublePlays: Int = 0
+    var salamies: Int = 0
+    var wins: Int = 0
+    var dongRobs: Int = 0
+    var yfslaChampionships: Int = 0
+
+    // Award count differences
+    var mvp: Int = 0
+    var dongKing: Int = 0
+    var rookieOfYear: Int = 0
+
+    // One-off badge overrides
+    var coattails: Bool?
+    var galactics: Bool?
+    var wideOpen: Bool?
+
+    var updatedAt: Date = Date()
+
+    init(playerName: String) {
+        self.playerName = playerName
+    }
+
+    /// True when this changes nothing (safe to skip saving)
+    var isEmpty: Bool {
+        dongs == 0 && drops == 0 && doublePlays == 0 && salamies == 0 && wins == 0
+            && dongRobs == 0 && yfslaChampionships == 0 && mvp == 0 && dongKing == 0
+            && rookieOfYear == 0 && coattails == nil && galactics == nil && wideOpen == nil
+    }
+}
+
 // MARK: - YFSLA Champions Data
 struct YFSLAChampions {
     // Players with YFSLA Championship wins (number in parentheses)
@@ -313,7 +354,9 @@ struct WideOpenPlayers {
 struct AchievementsCalculator {
 
     // MARK: - Calculate Player Achievements
-    static func calculateAchievements(for playerName: String, careerStats: CareerStats) -> PlayerAchievements {
+    /// careerStats should already include any admin adjustment (it drives the club tiers);
+    /// the adjustment's award counts and badge overrides are applied here.
+    static func calculateAchievements(for playerName: String, careerStats: CareerStats, adjustment: CareerAdjustment? = nil) -> PlayerAchievements {
         var achievements = PlayerAchievements(playerName: playerName)
 
         // Salami Club tier
@@ -342,6 +385,17 @@ struct AchievementsCalculator {
             if let roy = award.rookieOfYear, PlayerAliases.canonicalName(for: roy) == playerName {
                 achievements.rookieOfYearCount += 1
             }
+        }
+
+        // Admin corrections
+        if let adjustment {
+            achievements.mvpCount = max(0, achievements.mvpCount + adjustment.mvp)
+            achievements.dongKingCount = max(0, achievements.dongKingCount + adjustment.dongKing)
+            achievements.rookieOfYearCount = max(0, achievements.rookieOfYearCount + adjustment.rookieOfYear)
+            achievements.yfslaChampCount = max(0, achievements.yfslaChampCount + adjustment.yfslaChampionships)
+            if let coattails = adjustment.coattails { achievements.hasCoattails = coattails }
+            if let galactics = adjustment.galactics { achievements.hasGalactics = galactics }
+            if let wideOpen = adjustment.wideOpen { achievements.hasWideOpen = wideOpen }
         }
 
         return achievements
@@ -416,14 +470,15 @@ struct AchievementsCalculator {
     }
 
     // MARK: - Get All Player Achievements
-    static func getAllPlayerAchievements(currentSeasonStats: [YearlyStats] = []) -> [PlayerAchievements] {
-        let careerStats = HistoricalData.calculateCareerStats(currentSeasonStats: currentSeasonStats)
+    static func getAllPlayerAchievements(currentSeasonStats: [YearlyStats] = [], adjustments: [String: CareerAdjustment] = [:]) -> [PlayerAchievements] {
+        let careerStats = HistoricalData.calculateCareerStats(currentSeasonStats: currentSeasonStats, adjustments: adjustments)
         var achievementsList: [PlayerAchievements] = []
 
         for stats in careerStats {
             let achievements = calculateAchievements(
                 for: stats.playerName,
-                careerStats: stats
+                careerStats: stats,
+                adjustment: adjustments[stats.playerName]
             )
             achievementsList.append(achievements)
         }

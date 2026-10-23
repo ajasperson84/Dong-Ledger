@@ -13,7 +13,7 @@ struct CareerStatsView: View {
     @State private var selectedPlayer: CareerStats?
 
     var careerStats: [CareerStats] {
-        HistoricalData.calculateCareerStats(currentSeasonStats: statsService.yearlyStats)
+        HistoricalData.calculateCareerStats(currentSeasonStats: statsService.yearlyStats, adjustments: statsService.careerAdjustments)
     }
 
     enum StatCategory: String, CaseIterable {
@@ -131,7 +131,7 @@ struct CareerStatsView: View {
                 }
             }
             .sheet(item: $selectedPlayer) { player in
-                PlayerCareerDetailView(stats: player)
+                PlayerCareerDetailView(stats: player, adjustment: statsService.careerAdjustments[player.playerName])
             }
         }
     }
@@ -199,11 +199,13 @@ struct CareerStatRow: View {
 // MARK: - Player Career Detail View
 struct PlayerCareerDetailView: View {
     let stats: CareerStats
+    /// Admin correction, already applied to stats; used here for badges and championships
+    var adjustment: CareerAdjustment? = nil
     @Environment(\.dismiss) var dismiss
 
     // Get achievements for this player (uses combined career stats already passed in)
     var playerAchievements: PlayerAchievements {
-        AchievementsCalculator.calculateAchievements(for: stats.playerName, careerStats: stats)
+        AchievementsCalculator.calculateAchievements(for: stats.playerName, careerStats: stats, adjustment: adjustment)
     }
 
     var body: some View {
@@ -263,7 +265,7 @@ struct PlayerCareerDetailView: View {
                         ProfileStatRow(title: "DONG ROBBERIES", value: stats.totalDongRobs)
 
                         // YFSLA Championships
-                        let champCount = YFSLAChampions.champCount(for: stats.playerName)
+                        let champCount = playerAchievements.yfslaChampCount
                         if champCount > 0 {
                             ProfileStatRow(title: "YFSLA CHAMPIONSHIPS", value: champCount)
                         }
