@@ -300,7 +300,8 @@ struct WideOpenPlayers {
     static let players: Set<String> = [
         "Salary",
         "Boogie Joe",
-        "Cuidado"
+        "Cuidado",
+        "Candyman"
     ]
 
     static func hasWideOpen(_ playerName: String) -> Bool {
